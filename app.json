@@ -32,6 +32,20 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Prompt-Solar CRM uses your location to tag where each site visit happened."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Prompt-Solar CRM accesses your photos so you can attach a site photo to a visit.",
+          "cameraPermission": "Prompt-Solar CRM uses your camera to take a site photo for a visit."
+        }
       ]
     ],
     "experiments": {
