@@ -12,6 +12,7 @@ import { useLeads } from '@/hooks/useLeads'
 import { useAuth } from '@/context/AuthContext'
 import { useMyFollowUps, useCompleteFollowUp } from '@/hooks/useFollowUps'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
+import FollowUpSetter from '@/components/sales/FollowUpSetter'
 import type { Lead } from '@/types/sales'
 
 type TodoItem =
@@ -40,17 +41,44 @@ function formatDate(dateKey: string): string {
 function FollowUpCard({ item, onDone }: { item: Extract<TodoItem, { kind: 'follow_up' }>; onDone: () => void }) {
   const complete = useCompleteFollowUp()
   const [busy, setBusy] = useState(false)
+  const [showReplan, setShowReplan] = useState(false)
 
   async function act(status: 'completed' | 'dismissed') {
     setBusy(true)
     try {
       await complete.mutateAsync({ id: item.id, status })
-      onDone()
+      if (status === 'dismissed') {
+        // Dismissing doesn't mean the lead is closed out — offer to plan the
+        // next follow-up/visit right away instead of just losing the lead
+        // from view once this card refetches away.
+        setShowReplan(true)
+      } else {
+        onDone()
+      }
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update follow-up')
     } finally {
       setBusy(false)
     }
+  }
+
+  function confirmDismiss() {
+    Alert.alert('Dismiss this follow-up?', `You'll get a chance to plan the next follow-up for ${item.leadName}.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Dismiss', style: 'destructive', onPress: () => act('dismissed') },
+    ])
+  }
+
+  if (showReplan) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.leadName}>{item.leadName}</Text>
+        <Text style={styles.reasonText}>Plan the next follow-up, or skip to leave it for later.</Text>
+        <View style={{ marginTop: 10 }}>
+          <FollowUpSetter leadId={item.leadId} onDone={onDone} onCancel={onDone} />
+        </View>
+      </View>
+    )
   }
 
   return (
@@ -69,7 +97,7 @@ function FollowUpCard({ item, onDone }: { item: Extract<TodoItem, { kind: 'follo
         </View>
       </View>
       <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.secondaryBtn} onPress={() => act('dismissed')} disabled={busy}>
+        <TouchableOpacity style={styles.secondaryBtn} onPress={confirmDismiss} disabled={busy}>
           <Text style={styles.secondaryBtnText}>Dismiss</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.primaryBtn} onPress={() => act('completed')} disabled={busy}>

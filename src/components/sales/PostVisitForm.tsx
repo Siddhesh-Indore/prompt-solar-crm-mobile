@@ -2,15 +2,19 @@
 // Records a completed visit and branches the lead's stage per outcome:
 //   finalized     -> stage=visited (client intake form becomes fillable — web-only for now)
 //   second_visit  -> stage=visit_fixed with a new visit date (loops back)
-//   follow_up     -> stage=visited, opens FollowUpSetter
+//   follow_up     -> a next visit date is optional here too: if given, this
+//                    behaves like second_visit (the next visit IS the plan);
+//                    left blank, stage=visited and FollowUpSetter opens for
+//                    a callback reminder instead
 //   lost          -> stage=lost (terminal)
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { useAuth } from '@/context/AuthContext'
 import { useCreateVisitReport, type NewVisitReportInput } from '@/hooks/useVisitReports'
 import { useUpdateLead } from '@/hooks/useLeadMutations'
 import { uploadVisitPhoto } from '@/lib/uploadVisitPhoto'
 import ChipSelect from '@/components/sales/ChipSelect'
+import DateTimeField from '@/components/sales/DateTimeField'
 import FollowUpSetter from '@/components/sales/FollowUpSetter'
 import LocationPhotoCapture, { type LocationPhotoValue } from '@/components/sales/LocationPhotoCapture'
 import type { Lead } from '@/types/sales'
@@ -47,10 +51,13 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
   const [submitting, setSubmitting] = useState(false)
   const [showFollowUpSetter, setShowFollowUpSetter] = useState(false)
 
+  const showNextVisitFields = outcome === 'second_visit' || outcome === 'follow_up'
+  const nextVisitPlanned = showNextVisitFields && !!newVisitDate
+
   async function submit() {
     setError(null)
     if (outcome === 'second_visit' && !newVisitDate) {
-      setError('Enter a date for the next visit (YYYY-MM-DD).')
+      setError('Pick a date for the next visit.')
       return
     }
     if (locationPhoto.latitude == null || locationPhoto.longitude == null) {
@@ -79,7 +86,9 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         photo_url: photoPath,
       })
 
-      if (outcome === 'second_visit') {
+      if (outcome === 'second_visit' || (outcome === 'follow_up' && nextVisitPlanned)) {
+        // The next visit itself is the plan — schedule it directly rather
+        // than also opening FollowUpSetter for a separate reminder.
         await updateLead.mutateAsync({
           id: lead.id,
           patch: { stage: 'visit_fixed', visit_date: newVisitDate, visit_time: newVisitTime || null },
@@ -102,8 +111,21 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
     }
   }
 
+  function handleCancel() {
+    const hasInput = kwInterest || quoteDiscussed || nextStep || notes || newVisitDate || newVisitTime
+      || locationPhoto.latitude != null || locationPhoto.photoUri
+    if (!hasInput) {
+      onCancel?.()
+      return
+    }
+    Alert.alert('Discard this visit report?', 'What you entered — including any captured location or photo — will be lost.', [
+      { text: 'Keep Editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: onCancel },
+    ])
+  }
+
   if (showFollowUpSetter) {
-    return <FollowUpSetter leadId={lead.id} onDone={onDone} />
+    return <FollowUpSetter leadId={lead.id} onDone={onDone} onCancel={onDone} />
   }
 
   return (
@@ -120,19 +142,26 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
 
       <LocationPhotoCapture value={locationPhoto} onChange={setLocationPhoto} />
 
-      {outcome === 'second_visit' && (
+      {showNextVisitFields && (
         <View style={styles.row2}>
           <View style={styles.col}>
-            <Field label="Next Visit Date *">
-              <TextInput style={styles.input} value={newVisitDate} onChangeText={setNewVisitDate} placeholder="2026-07-22" placeholderTextColor="#9ca3af" />
-            </Field>
+            <DateTimeField
+              label={outcome === 'second_visit' ? 'Next Visit Date *' : 'Next Visit Date (optional)'}
+              value={newVisitDate}
+              onChange={setNewVisitDate}
+              mode="date"
+              minimumDate={new Date()}
+              placeholder="Pick a date"
+            />
           </View>
           <View style={styles.col}>
-            <Field label="Time">
-              <TextInput style={styles.input} value={newVisitTime} onChangeText={setNewVisitTime} placeholder="15:00" placeholderTextColor="#9ca3af" />
-            </Field>
+            <DateTimeField label="Time" value={newVisitTime} onChange={setNewVisitTime} mode="time" placeholder="Pick a time" />
           </View>
         </View>
+      )}
+
+      {outcome === 'follow_up' && !nextVisitPlanned && (
+        <Text style={styles.hint}>No next visit date? A follow-up reminder will be set instead after saving.</Text>
       )}
 
       <View style={styles.row2}>
@@ -166,7 +195,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
 
       <View style={styles.actions}>
         {onCancel && (
-          <TouchableOpacity style={styles.secondaryBtn} onPress={onCancel} disabled={submitting}>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={handleCancel} disabled={submitting}>
             <Text style={styles.secondaryBtnText}>Cancel</Text>
           </TouchableOpacity>
         )}
@@ -193,8 +222,9 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
   input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
-  row2: { flexDirection: 'row', gap: 12 },
+  row2: { flexDirection: 'row', gap: 12, marginBottom: 14 },
   col: { flex: 1 },
+  hint: { fontSize: 12, color: '#9ca3af', marginTop: -8, marginBottom: 14 },
   errorBox: { backgroundColor: '#fee2e2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 10, marginBottom: 14 },
   errorText: { color: '#b91c1c', fontSize: 12 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#f3f4f6' },

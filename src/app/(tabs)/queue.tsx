@@ -119,12 +119,19 @@ export default function QueueScreen() {
     }
   }
 
+  function backToQueue() {
+    Alert.alert('Leave this lead?', 'Any unsaved qualification details will be lost. The lead stays locked to you until you release it or the lock expires.', [
+      { text: 'Keep Editing', style: 'cancel' },
+      { text: 'Leave', style: 'destructive', onPress: () => setOpenLead(null) },
+    ])
+  }
+
   if (openLead) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.detailWrap} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity onPress={() => setOpenLead(null)}>
+            <TouchableOpacity onPress={backToQueue}>
               <Text style={styles.backLink}>‹ Back to queue</Text>
             </TouchableOpacity>
             <View style={styles.detailHeader}>

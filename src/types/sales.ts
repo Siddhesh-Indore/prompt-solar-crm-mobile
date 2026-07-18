@@ -110,6 +110,51 @@ export interface FollowUp {
   created_at: string
 }
 
+export interface ClientIntakeForm {
+  id: string
+  lead_id: string
+  exec_id: string | null
+  signed_at: string
+  full_name: string
+  address: string
+  phone: string
+  email: string | null
+  age: number | null
+  kw: number
+  roof_type: 'rcc' | 'roofing_metal_sheets' | null
+  panel_company: 'adani' | 'waaree' | 'other' | null
+  panel_company_other: string | null
+  panel_size: string | null
+  inverter: 'vsole' | 'waaree' | 'solaredge' | 'other' | null
+  inverter_other: string | null
+  structure: 'monorail' | 'gi' | 'hdg' | null
+  structure_height: string | null
+  payment_method: 'cash' | 'loan'
+  total_cost: number
+  cash_advance: number | null
+  cash_remaining_after_install: number | null
+  cash_subsidy_after_dispersal: number | null
+  loan_bank_name: string | null
+  loan_advance: number | null
+  loan_after_dispersal: number | null
+  loan_subsidy_consumer: number | null
+  doc_aadhaar: boolean
+  doc_pan: boolean
+  doc_bank_passbook: boolean
+  doc_email: boolean
+  doc_house_8a: boolean
+  doc_light_bill: boolean
+  doc_cancelled_cheque: boolean
+  cibil_checked: boolean
+  scope_stamp_paper: boolean
+  scope_concrete_block: boolean
+  scope_earthing: boolean
+  client_signature_url: string | null
+  salesman_signature_url: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface LeadFilters {
   source?: LeadSource
   stage?: LeadStage

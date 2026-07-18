@@ -1,18 +1,20 @@
 // src/app/(tabs)/visits.tsx
 // Sales exec's visit list — leads at visit_fixed (upcoming) or visited
-// (post-visit). Mirrors the web CRM's VisitsPage. Client intake form stays
-// web-only for now (it's the most complex piece of the spec — cash/loan
-// branches, doc checklist, signatures).
+// (post-visit, pending intake form). Mirrors the web CRM's VisitsPage. A lead
+// only unlocks the client intake form once its latest visit report outcome
+// is 'finalized'.
 import { useMemo, useState } from 'react'
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLeads } from '@/hooks/useLeads'
 import { useAuth } from '@/context/AuthContext'
-import { useLogCall } from '@/hooks/useCallLogs'
 import { useLatestVisitOutcome } from '@/hooks/useVisitReports'
+import { useClientIntakeForm } from '@/hooks/useClientIntake'
 import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import StageBadge from '@/components/sales/badges/StageBadge'
 import PostVisitForm from '@/components/sales/PostVisitForm'
+import PreVisitCallForm from '@/components/sales/PreVisitCallForm'
+import ClientIntakeForm from '@/components/sales/ClientIntakeForm'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import type { Lead } from '@/types/sales'
 
@@ -22,18 +24,11 @@ function formatDate(d: string | null) {
 }
 
 function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => void; onOpenDetail: () => void }) {
-  const logCall = useLogCall()
   const [recording, setRecording] = useState(false)
+  const [loggingCall, setLoggingCall] = useState(false)
+  const [fillingIntake, setFillingIntake] = useState(false)
   const outcome = useLatestVisitOutcome(lead.id)
-
-  async function logPreVisitCall() {
-    try {
-      await logCall.mutateAsync({ lead_id: lead.id, call_type: 'pre_visit', outcome: 'confirmed' })
-      Alert.alert('Logged', 'Pre-visit call logged.')
-    } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to log call')
-    }
-  }
+  const { data: intakeForm } = useClientIntakeForm(lead.id)
 
   return (
     <View style={styles.card}>
@@ -54,9 +49,9 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
         </View>
       </TouchableOpacity>
 
-      {lead.stage === 'visit_fixed' && !recording && (
+      {lead.stage === 'visit_fixed' && !recording && !loggingCall && (
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={logPreVisitCall}>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setLoggingCall(true)}>
             <Text style={styles.secondaryBtnText}>Log Pre-Visit Call</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.primaryBtn} onPress={() => setRecording(true)}>
@@ -69,13 +64,31 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
         <Text style={styles.hint}>Awaiting follow-up or next visit.</Text>
       )}
 
-      {lead.stage === 'visited' && outcome === 'finalized' && (
-        <Text style={styles.hintDone}>Visit finalized — fill the client intake form on the web app to continue.</Text>
+      {lead.stage === 'visited' && outcome === 'finalized' && !intakeForm && !fillingIntake && (
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setFillingIntake(true)}>
+            <Text style={styles.primaryBtnText}>Fill Client Intake Form</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {intakeForm && <Text style={styles.hintDone}>Intake form submitted.</Text>}
+
+      {loggingCall && (
+        <View style={styles.formWrap}>
+          <PreVisitCallForm lead={lead} onDone={() => { setLoggingCall(false); onDone() }} onCancel={() => setLoggingCall(false)} />
+        </View>
       )}
 
       {recording && (
         <View style={styles.formWrap}>
           <PostVisitForm lead={lead} onDone={() => { setRecording(false); onDone() }} onCancel={() => setRecording(false)} />
+        </View>
+      )}
+
+      {fillingIntake && (
+        <View style={styles.formWrap}>
+          <ClientIntakeForm lead={lead} onDone={() => { setFillingIntake(false); onDone() }} onCancel={() => setFillingIntake(false)} />
         </View>
       )}
     </View>

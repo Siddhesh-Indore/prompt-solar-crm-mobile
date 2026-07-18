@@ -3,7 +3,7 @@
 // mapping and same side effects (call log, activity row, callback reminder,
 // lock release), rebuilt with plain RN inputs instead of react-hook-form.
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Alert } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { useUpdateLead } from '@/hooks/useLeadMutations'
@@ -11,6 +11,7 @@ import { useLogCall } from '@/hooks/useCallLogs'
 import { useReleaseLeadLock } from '@/hooks/useLeadLock'
 import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
 import ChipSelect from '@/components/sales/ChipSelect'
+import DateTimeField from '@/components/sales/DateTimeField'
 import type { Lead } from '@/types/sales'
 
 const STATUS_OPTIONS = [
@@ -64,11 +65,11 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       return
     }
     if (status === 'visit_fixed' && !visitDate) {
-      setError('Enter a visit date (YYYY-MM-DD).')
+      setError('Pick a visit date.')
       return
     }
     if (status === 'call_back' && !callbackDue) {
-      setError('Enter a callback date/time (YYYY-MM-DD HH:MM).')
+      setError('Pick a callback date and time.')
       return
     }
 
@@ -117,12 +118,11 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       })
 
       if (status === 'call_back' && callbackDue) {
-        const parsedDue = new Date(callbackDue.replace(' ', 'T'))
         await supabase.from('reminders').insert({
           lead_id: lead.id,
           assigned_to: user?.id ?? null,
           reminder_type: 'callback',
-          due_at: isNaN(parsedDue.getTime()) ? callbackDue : parsedDue.toISOString(),
+          due_at: new Date(callbackDue).toISOString(),
           note: callbackReason || null,
         })
       }
@@ -139,6 +139,20 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
   async function releaseAndExit() {
     await releaseLock.mutateAsync({ leadId: lead.id })
     onDone()
+  }
+
+  function handleRelease() {
+    const hasInput = status !== 'hot' || roofType || ownership || propertyType || billAmount
+      || quoteMin || quoteMax || competitorContacted || assignedExecId || visitDate || visitTime
+      || callbackDue || callbackReason || notes
+    if (!hasInput) {
+      releaseAndExit()
+      return
+    }
+    Alert.alert('Release this lead?', 'What you entered will be lost and the lead goes back to the queue.', [
+      { text: 'Keep Editing', style: 'cancel' },
+      { text: 'Release', style: 'destructive', onPress: releaseAndExit },
+    ])
   }
 
   return (
@@ -158,20 +172,20 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
           <Field label="Sales Executive *">
             <ExecAssignPicker value={assignedExecId} onChange={setAssignedExecId} required />
           </Field>
-          <Field label="Visit Date * (YYYY-MM-DD)">
-            <TextInput style={styles.input} value={visitDate} onChangeText={setVisitDate} placeholder="2026-07-20" placeholderTextColor="#9ca3af" />
-          </Field>
-          <Field label="Visit Time (HH:MM)">
-            <TextInput style={styles.input} value={visitTime} onChangeText={setVisitTime} placeholder="14:30" placeholderTextColor="#9ca3af" />
-          </Field>
+          <View style={styles.field}>
+            <DateTimeField label="Visit Date *" value={visitDate} onChange={setVisitDate} mode="date" minimumDate={new Date()} placeholder="Pick a date" />
+          </View>
+          <View style={styles.field}>
+            <DateTimeField label="Visit Time" value={visitTime} onChange={setVisitTime} mode="time" placeholder="Pick a time" />
+          </View>
         </>
       )}
 
       {status === 'call_back' && (
         <>
-          <Field label="Callback Due * (YYYY-MM-DD HH:MM)">
-            <TextInput style={styles.input} value={callbackDue} onChangeText={setCallbackDue} placeholder="2026-07-20 18:00" placeholderTextColor="#9ca3af" />
-          </Field>
+          <View style={styles.field}>
+            <DateTimeField label="Callback Due *" value={callbackDue} onChange={setCallbackDue} mode="datetime" minimumDate={new Date()} placeholder="Pick date & time" />
+          </View>
           <Field label="Reason">
             <TextInput style={styles.input} value={callbackReason} onChangeText={setCallbackReason} placeholder="e.g. asked to call after 6pm" placeholderTextColor="#9ca3af" />
           </Field>
@@ -225,7 +239,7 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       </Field>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.secondaryBtn} onPress={releaseAndExit}>
+        <TouchableOpacity style={styles.secondaryBtn} onPress={handleRelease}>
           <Text style={styles.secondaryBtnText}>Release Lead</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.primaryBtn, submitting && styles.btnDisabled]} onPress={onSubmit} disabled={submitting}>
