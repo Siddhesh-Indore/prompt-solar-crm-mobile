@@ -161,3 +161,16 @@ export interface LeadFilters {
   temperature?: LeadTemperature
   search?: string
 }
+
+// Reference list of already-completed installations — not tied to the
+// leads pipeline, imported by admin from historical records so field staff
+// can point to a nearby finished site when talking to a prospect.
+export interface FinalizedCustomer {
+  id: string
+  name: string
+  phone: string | null
+  village: string | null
+  kw: number | null
+  imported_by: string | null
+  created_at: string
+}

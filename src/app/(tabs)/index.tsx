@@ -26,6 +26,7 @@ export default function HomeScreen() {
   const role = profile?.role
   const canSeeQueue = role === 'telecaller' || role === 'admin' || role === 'manager'
   const canSeeVisits = role === 'sales_exec' || role === 'admin' || role === 'manager'
+  const canSeeFieldTools = role === 'telecaller' || role === 'sales_exec' || role === 'admin' || role === 'manager'
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -60,6 +61,24 @@ export default function HomeScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.linkTitle}>Visits</Text>
               <Text style={styles.linkSubtitle}>Your assigned site visits</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {canSeeFieldTools && (
+          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/village-reference')}>
+            <Text style={styles.linkEmoji}>✅</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Finalized Customers</Text>
+              <Text style={styles.linkSubtitle}>Search completed sites by village or name</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {canSeeFieldTools && (
+          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/emi-calculator')}>
+            <Text style={styles.linkEmoji}>🧮</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>EMI Calculator</Text>
+              <Text style={styles.linkSubtitle}>Work out monthly loan payments</Text>
             </View>
           </TouchableOpacity>
         )}
