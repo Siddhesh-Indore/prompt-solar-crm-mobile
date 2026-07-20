@@ -36,9 +36,11 @@ export function useCreateClientIntakeForm() {
         .single()
       if (error) throw error
 
-      // Business rule: intake form only from a finalized visit — on save, stage -> converted.
-      await supabase.from('leads').update({ stage: 'converted' }).eq('id', input.lead_id)
-
+      // The lead is NOT marked converted here anymore — submitting the
+      // intake form sends it to the customer on WhatsApp (filled PDF +
+      // Approve/Disapprove) via whatsapp-notify, and only a genuine Approve
+      // tap (relayed back through wa-approval-callback) sets stage=converted
+      // and pushes the Meta/Google conversion signal.
       await supabase.from('lead_activities').insert({
         lead_id: input.lead_id,
         actor_id: user?.id ?? null,
@@ -46,7 +48,7 @@ export function useCreateClientIntakeForm() {
         new_value: { payment_method: input.payment_method, total_cost: input.total_cost },
       })
 
-      supabase.functions.invoke('push-conversion', { body: { leadId: input.lead_id, stage: 'converted' } }).catch(() => {})
+      supabase.functions.invoke('whatsapp-notify', { body: { leadId: input.lead_id, event: 'finalized' } }).catch(() => {})
 
       return data as unknown as ClientIntakeForm
     },
