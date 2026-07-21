@@ -1,6 +1,6 @@
 # Privacy Policy for Prompt-Solar CRM
 
-_Last updated: [DATE]_
+_Last updated: July 21, 2026_
 
 Prompt-Solar CRM ("the App") is an internal customer relationship management
 tool for Prompt-Solar's sales and field staff. This policy explains what data
@@ -44,4 +44,4 @@ of, or deletion of their personal data by contacting us below.
 
 ## Contact
 
-For questions about this policy, contact: [YOUR CONTACT EMAIL]
+For questions about this policy, contact: admin@promptco.in
