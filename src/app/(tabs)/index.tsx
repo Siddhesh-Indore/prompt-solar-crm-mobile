@@ -31,7 +31,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Prompt-Solar CRM</Text>
+        <Text style={styles.title}>Prompt Solar CRM</Text>
         <TouchableOpacity onPress={signOut}>
           <Text style={styles.signOut}>Sign out</Text>
         </TouchableOpacity>
