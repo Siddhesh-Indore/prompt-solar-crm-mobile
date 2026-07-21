@@ -1,9 +1,11 @@
 // src/app/forgot-password.tsx
 // Two-step OTP recovery, mirroring the web CRM's ForgotPasswordPage: email
-// in, Supabase Auth mails a 6-digit code (the "Reset Password" template
-// must show {{ .Token }} — see Supabase Dashboard > Auth > Email Templates),
-// code in, verifyOtp() signs the user into a recovery session, then
-// reset-password.tsx sets the new password.
+// in, Supabase Auth mails a numeric code (the "Reset Password" template
+// must show {{ .Token }} — see Supabase Dashboard > Auth > Email Templates;
+// the code's length is whatever the project's OTP length setting is —
+// don't hardcode a digit count here, let verifyOtp() be the actual
+// validator), code in, verifyOtp() signs the user into a recovery session,
+// then reset-password.tsx sets the new password.
 import { useState } from 'react'
 import { router } from 'expo-router'
 import {
@@ -38,8 +40,8 @@ export default function ForgotPasswordScreen() {
 
   async function verifyCode() {
     setError(null)
-    if (code.trim().length !== 6) {
-      setError('Enter the 6-digit code from your email')
+    if (code.trim().length < 6) {
+      setError('Enter the code from your email')
       return
     }
     setSubmitting(true)
@@ -73,7 +75,7 @@ export default function ForgotPasswordScreen() {
               <>
                 <Text style={styles.cardTitle}>Reset your password</Text>
                 <Text style={styles.helperText}>
-                  Enter your email and we'll send you a 6-digit code.
+                  Enter your email and we'll send you a verification code.
                 </Text>
 
                 <Text style={styles.label}>Email address</Text>
@@ -106,16 +108,16 @@ export default function ForgotPasswordScreen() {
               <>
                 <Text style={styles.cardTitle}>Enter your code</Text>
                 <Text style={styles.helperText}>
-                  We sent a 6-digit code to {email.trim()}. It expires shortly.
+                  We sent a verification code to {email.trim()}. It expires shortly.
                 </Text>
 
-                <Text style={styles.label}>6-digit code</Text>
+                <Text style={styles.label}>Verification code</Text>
                 <TextInput
                   style={[styles.input, styles.codeInput]}
-                  placeholder="000000"
+                  placeholder="Enter code"
                   placeholderTextColor="#9ca3af"
                   keyboardType="number-pad"
-                  maxLength={6}
+                  maxLength={12}
                   value={code}
                   onChangeText={setCode}
                 />
@@ -168,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 12, color: '#111827', fontSize: 14, marginBottom: 16,
   },
-  codeInput: { fontSize: 20, letterSpacing: 8, textAlign: 'center', fontWeight: '600' },
+  codeInput: { fontSize: 20, letterSpacing: 6, textAlign: 'center', fontWeight: '600' },
   errorBox: { backgroundColor: '#fee2e2', borderColor: '#fecaca', borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 16 },
   errorText: { color: '#b91c1c', fontSize: 13 },
   button: { backgroundColor: '#4ade80', borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
