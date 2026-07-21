@@ -1,34 +1,44 @@
+// src/app/reset-password.tsx
+// Reached after forgot-password.tsx's verifyOtp() call succeeds, which
+// leaves a valid (recovery) session active — same mechanism the web CRM's
+// ResetPasswordPage relies on, just via a typed code instead of a link.
 import { useState } from 'react'
-import { Redirect, router } from 'expo-router'
+import { router } from 'expo-router'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView,
   ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView,
 } from 'react-native'
-import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
 
-export default function LoginScreen() {
-  const { session, loading, signIn } = useAuth()
-  const [email, setEmail] = useState('')
+export default function ResetPasswordScreen() {
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (!loading && session) return <Redirect href="/" />
-
   async function onSubmit() {
     setError(null)
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords don't match")
+      return
+    }
     setSubmitting(true)
-    const { error } = await signIn(email.trim(), password)
+    const { error } = await supabase.auth.updateUser({ password })
     setSubmitting(false)
-    if (error) setError(error)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    router.replace('/')
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Image
             source={require('@/assets/images/prompt-logo.png')}
@@ -39,21 +49,9 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>Solar EPC Sales Platform</Text>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Welcome back</Text>
+            <Text style={styles.cardTitle}>Set a new password</Text>
 
-            <Text style={styles.label}>Email address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@promptsolar.com"
-              placeholderTextColor="#9ca3af"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>New password</Text>
             <TextInput
               style={styles.input}
               placeholder="••••••••"
@@ -61,6 +59,16 @@ export default function LoginScreen() {
               secureTextEntry
               value={password}
               onChangeText={setPassword}
+            />
+
+            <Text style={styles.label}>Confirm new password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor="#9ca3af"
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
             />
 
             {error && (
@@ -74,11 +82,7 @@ export default function LoginScreen() {
               onPress={onSubmit}
               disabled={submitting}
             >
-              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign in</Text>}
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.forgotLink} onPress={() => router.push('/forgot-password')}>
-              <Text style={styles.forgotLinkText}>Forgot password?</Text>
+              {submitting ? <ActivityIndicator color="#052e16" /> : <Text style={styles.buttonText}>Update password</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -90,10 +94,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
   container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
-  logo: {
-    width: 220, height: 45,
-    alignSelf: 'center', marginBottom: 20,
-  },
+  logo: { width: 220, height: 45, alignSelf: 'center', marginBottom: 20 },
   title: { color: '#111827', fontSize: 24, fontWeight: '700', textAlign: 'center' },
   subtitle: { color: '#6b7280', fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 32 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: '#e5e7eb' },
@@ -108,6 +109,4 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#4ade80', borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#052e16', fontSize: 15, fontWeight: '700' },
-  forgotLink: { marginTop: 16, alignItems: 'center' },
-  forgotLinkText: { color: '#047857', fontSize: 13, fontWeight: '600' },
 })
