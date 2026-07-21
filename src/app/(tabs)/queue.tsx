@@ -130,7 +130,7 @@ export default function QueueScreen() {
   if (openLead) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView contentContainerStyle={styles.detailWrap} keyboardShouldPersistTaps="handled">
             <BackButton onPress={backToQueue} label="Back to queue" />
             <View style={styles.detailHeader}>
