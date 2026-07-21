@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "prompt-solar-crm-mobile",
+    "name": "Prompt CRM",
     "slug": "prompt-solar-crm-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,10 +11,11 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.promptsolar.crm",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -28,23 +29,23 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#E6F4FE",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 160
         }
       ],
       "@react-native-community/datetimepicker",
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Prompt-Solar CRM uses your location to tag where each site visit happened."
+          "locationWhenInUsePermission": "Prompt Solar CRM uses your location to tag where each site visit happened."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Prompt-Solar CRM accesses your photos so you can attach a site photo to a visit.",
-          "cameraPermission": "Prompt-Solar CRM uses your camera to take a site photo for a visit."
+          "photosPermission": "Prompt Solar CRM accesses your photos so you can attach a site photo to a visit.",
+          "cameraPermission": "Prompt Solar CRM uses your camera to take a site photo for a visit."
         }
       ]
     ],
