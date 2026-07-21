@@ -28,9 +28,15 @@ communications. We do not sell this data or use it for advertising.
 ## Data Storage and Sharing
 
 Data is stored in our Supabase-hosted database and is accessible only to
-authorized Prompt-Solar staff. Site-visit photos may trigger an automated
-WhatsApp notification to relevant staff as part of standard follow-up
-workflows.
+authorized Prompt-Solar staff. Site-visit photos are never shared outside
+this database.
+
+As part of the sales workflow, some lead/customer data is sent to the lead
+directly over WhatsApp: an automated text message when a call is logged, and
+— once a sale is finalized — a PDF copy of the signed intake form (name,
+address, phone, and payment details) with a request to confirm it. These
+messages are sent through our own WhatsApp messaging service, which in turn
+delivers them via WhatsApp's platform.
 
 ## Data Retention
 
