@@ -72,9 +72,6 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
   const [docs, setDocs] = useState<Record<string, boolean>>({})
   const [scope, setScope] = useState<Record<string, boolean>>({})
 
-  const [clientSignatureUrl, setClientSignatureUrl] = useState('')
-  const [salesmanSignatureUrl, setSalesmanSignatureUrl] = useState('')
-
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -130,8 +127,8 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
         scope_stamp_paper: !!scope.scope_stamp_paper,
         scope_concrete_block: !!scope.scope_concrete_block,
         scope_earthing: !!scope.scope_earthing,
-        client_signature_url: clientSignatureUrl || null,
-        salesman_signature_url: salesmanSignatureUrl || null,
+        client_signature_url: null,
+        salesman_signature_url: null,
       })
       onDone()
     } catch (err) {
@@ -144,7 +141,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
   function handleCancel() {
     const hasInput = fullName !== lead.name || address !== (lead.address ?? '') || phone !== lead.phone
       || email || age || kw || roofType || panelCompany || panelSize || inverter || structure
-      || totalCost || cashAdvance || loanBankName || clientSignatureUrl || salesmanSignatureUrl
+      || totalCost || cashAdvance || loanBankName
     if (!hasInput) {
       onCancel?.()
       return
@@ -290,14 +287,6 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
           </View>
         ))}
       </View>
-
-      <Text style={styles.sectionTitle}>Signatures</Text>
-      <Field label="Client Signature (URL)">
-        <TextInput style={styles.input} value={clientSignatureUrl} onChangeText={setClientSignatureUrl} placeholder="Link to uploaded signature" placeholderTextColor="#9ca3af" />
-      </Field>
-      <Field label="Salesman Signature (URL)">
-        <TextInput style={styles.input} value={salesmanSignatureUrl} onChangeText={setSalesmanSignatureUrl} placeholder="Link to uploaded signature" placeholderTextColor="#9ca3af" />
-      </Field>
 
       <View style={styles.actions}>
         {onCancel && (
