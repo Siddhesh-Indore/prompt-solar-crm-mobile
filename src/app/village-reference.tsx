@@ -8,6 +8,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Activity
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFinalizedCustomers } from '@/hooks/useFinalizedCustomers'
+import BackButton from '@/components/BackButton'
 import type { FinalizedCustomer } from '@/types/sales'
 
 function CustomerCard({ customer }: { customer: FinalizedCustomer }) {
@@ -35,9 +36,7 @@ export default function VillageReferenceScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backLink}>‹ Back</Text>
-        </TouchableOpacity>
+        <BackButton onPress={() => router.back()} />
         <Text style={styles.title}>Finalized Customers</Text>
         <Text style={styles.subtitle}>Search by village or name to reference a nearby completed site</Text>
       </View>
@@ -81,7 +80,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f9fafb' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  backLink: { fontSize: 14, color: '#047857', fontWeight: '600', marginBottom: 8 },
   title: { fontSize: 20, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   searchWrap: { paddingHorizontal: 20, paddingBottom: 8 },

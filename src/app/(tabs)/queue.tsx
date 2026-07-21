@@ -14,6 +14,7 @@ import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
 import QualificationForm from '@/components/sales/QualificationForm'
 import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
+import BackButton from '@/components/BackButton'
 import type { Lead } from '@/types/sales'
 
 const TEMP_ORDER: Record<string, number> = { hot: 0, warm: 1, cold: 2 }
@@ -131,9 +132,7 @@ export default function QueueScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.detailWrap} keyboardShouldPersistTaps="handled">
-            <TouchableOpacity onPress={backToQueue}>
-              <Text style={styles.backLink}>‹ Back to queue</Text>
-            </TouchableOpacity>
+            <BackButton onPress={backToQueue} label="Back to queue" />
             <View style={styles.detailHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.detailName}>{openLead.name}</Text>
@@ -260,7 +259,6 @@ const styles = StyleSheet.create({
   unlockBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: '#fef3c7', borderWidth: 1, borderColor: '#fde68a' },
   unlockBtnText: { fontSize: 12, fontWeight: '600', color: '#b45309' },
   detailWrap: { padding: 16 },
-  backLink: { fontSize: 14, color: '#047857', fontWeight: '600', marginBottom: 14 },
   detailHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
   detailName: { fontSize: 18, fontWeight: '700', color: '#111827' },
   detailPhone: { fontSize: 13, color: '#6b7280', marginTop: 2 },

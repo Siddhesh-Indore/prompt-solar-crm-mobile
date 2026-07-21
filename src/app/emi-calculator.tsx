@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import BackButton from '@/components/BackButton'
 
 const TENURE_PRESETS = [1, 2, 3, 5, 7, 10]
 type InterestMethod = 'reducing' | 'flat'
@@ -112,9 +113,7 @@ export default function EmiCalculatorScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backLink}>‹ Back</Text>
-        </TouchableOpacity>
+        <BackButton onPress={() => router.back()} />
         <Text style={styles.title}>EMI Calculator</Text>
         <Text style={styles.subtitle}>Work out monthly payments for a solar loan on the spot</Text>
 
@@ -229,7 +228,6 @@ export default function EmiCalculatorScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f9fafb' },
   content: { padding: 20, paddingBottom: 40 },
-  backLink: { fontSize: 14, color: '#047857', fontWeight: '600', marginBottom: 8 },
   title: { fontSize: 20, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2, marginBottom: 20 },
   field: { marginBottom: 16 },

@@ -16,6 +16,7 @@ import PostVisitForm from '@/components/sales/PostVisitForm'
 import PreVisitCallForm from '@/components/sales/PreVisitCallForm'
 import ClientIntakeForm from '@/components/sales/ClientIntakeForm'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
+import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
 
 function formatDate(d: string | null) {
@@ -74,23 +75,17 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
 
       {intakeForm && <Text style={styles.hintDone}>Intake form submitted.</Text>}
 
-      {loggingCall && (
-        <View style={styles.formWrap}>
-          <PreVisitCallForm lead={lead} onDone={() => { setLoggingCall(false); onDone() }} onCancel={() => setLoggingCall(false)} />
-        </View>
-      )}
+      <FormSheet visible={loggingCall} title="Log Pre-Visit Call" onClose={() => setLoggingCall(false)}>
+        <PreVisitCallForm lead={lead} onDone={() => { setLoggingCall(false); onDone() }} onCancel={() => setLoggingCall(false)} />
+      </FormSheet>
 
-      {recording && (
-        <View style={styles.formWrap}>
-          <PostVisitForm lead={lead} onDone={() => { setRecording(false); onDone() }} onCancel={() => setRecording(false)} />
-        </View>
-      )}
+      <FormSheet visible={recording} title="Record Visit" onClose={() => setRecording(false)}>
+        <PostVisitForm lead={lead} onDone={() => { setRecording(false); onDone() }} onCancel={() => setRecording(false)} />
+      </FormSheet>
 
-      {fillingIntake && (
-        <View style={styles.formWrap}>
-          <ClientIntakeForm lead={lead} onDone={() => { setFillingIntake(false); onDone() }} onCancel={() => setFillingIntake(false)} />
-        </View>
-      )}
+      <FormSheet visible={fillingIntake} title="Client Intake Form" onClose={() => setFillingIntake(false)}>
+        <ClientIntakeForm lead={lead} onDone={() => { setFillingIntake(false); onDone() }} onCancel={() => setFillingIntake(false)} />
+      </FormSheet>
     </View>
   )
 }
@@ -160,5 +155,4 @@ const styles = StyleSheet.create({
   primaryBtnText: { fontSize: 12, fontWeight: '700', color: '#052e16' },
   hint: { fontSize: 12, color: '#9ca3af', marginTop: 10 },
   hintDone: { fontSize: 12, color: '#047857', marginTop: 10 },
-  formWrap: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
 })

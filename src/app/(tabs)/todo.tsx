@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useMyFollowUps, useCompleteFollowUp } from '@/hooks/useFollowUps'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import FollowUpSetter from '@/components/sales/FollowUpSetter'
+import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
 
 type TodoItem =
@@ -71,13 +72,13 @@ function FollowUpCard({ item, onDone }: { item: Extract<TodoItem, { kind: 'follo
 
   if (showReplan) {
     return (
-      <View style={styles.card}>
+      <FormSheet visible title="Plan Next Follow-up" onClose={onDone}>
         <Text style={styles.leadName}>{item.leadName}</Text>
         <Text style={styles.reasonText}>Plan the next follow-up, or skip to leave it for later.</Text>
         <View style={{ marginTop: 10 }}>
           <FollowUpSetter leadId={item.leadId} onDone={onDone} onCancel={onDone} />
         </View>
-      </View>
+      </FormSheet>
     )
   }
 
