@@ -128,7 +128,8 @@ function VisitCard({ lead, onOpenDetail }: { lead: Lead; onOpenDetail: () => voi
 }
 
 export default function TodoScreen() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const showsVisits = profile?.role === 'sales_exec' || profile?.role === 'admin' || profile?.role === 'manager'
   const { data: leads = [], isLoading: leadsLoading, refetch: refetchLeads, isRefetching: leadsRefetching } = useLeads()
   const { data: followUps = [], isLoading: followUpsLoading, refetch: refetchFollowUps, isRefetching: followUpsRefetching } = useMyFollowUps()
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
@@ -176,7 +177,7 @@ export default function TodoScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>To-Do</Text>
-        <Text style={styles.subtitle}>Your visits and follow-ups</Text>
+        <Text style={styles.subtitle}>{showsVisits ? 'Your visits and follow-ups' : 'Your follow-ups'}</Text>
       </View>
 
       {isLoading ? (
@@ -192,7 +193,9 @@ export default function TodoScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>Nothing on your list</Text>
-              <Text style={styles.emptySubtitle}>Visits and follow-ups assigned to you will show up here.</Text>
+              <Text style={styles.emptySubtitle}>
+                {showsVisits ? 'Visits and follow-ups assigned to you will show up here.' : 'Follow-ups assigned to you will show up here.'}
+              </Text>
             </View>
           }
           renderItem={({ item: section }) => (

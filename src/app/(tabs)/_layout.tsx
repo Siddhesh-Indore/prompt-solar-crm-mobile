@@ -14,7 +14,7 @@ export default function TabsLayout() {
   const role = profile?.role
   const canSeeQueue = role === 'telecaller' || role === 'admin' || role === 'manager'
   const canSeeVisits = role === 'sales_exec' || role === 'admin' || role === 'manager'
-  const canSeeTodo = role === 'sales_exec' || role === 'admin' || role === 'manager'
+  const canSeeTodo = role === 'sales_exec' || role === 'telecaller' || role === 'admin' || role === 'manager'
 
   return (
     <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: '#047857' }}>
