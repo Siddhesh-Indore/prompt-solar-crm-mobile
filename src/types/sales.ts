@@ -46,6 +46,8 @@ export interface Lead {
   property_type: 'residential' | 'commercial' | null
   competitor_contacted: boolean
   competitor_name: string | null
+  // From utility/DTC cold-call list imports
+  section: string | null
   stage: LeadStage
   temperature: LeadTemperature | null
   source: LeadSource
@@ -72,7 +74,8 @@ export interface CallLog {
   call_type: 'qualification' | 'pre_visit' | 'follow_up' | 'callback'
   called_at: string
   duration_seconds: number | null
-  outcome: 'answered' | 'no_answer' | 'busy' | 'callback_requested' | 'confirmed' | 'rescheduled' | null
+  outcome: 'answered' | 'no_answer' | 'busy' | 'callback_requested' | 'confirmed' | 'rescheduled'
+    | 'incoming_call_barred' | 'invalid_phone_number' | null
   recording_url: string | null
   notes: string | null
   created_at: string

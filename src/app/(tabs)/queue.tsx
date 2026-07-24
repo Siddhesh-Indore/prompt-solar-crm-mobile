@@ -4,9 +4,9 @@
 // releasing the qualification form releases it. Mirrors the web CRM's
 // TelecallerQueuePage.
 import { useMemo, useState } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLeads } from '@/hooks/useLeads'
+import { useLeads, usePendingFollowupLeadIds, useLeadsByLastCallOutcome } from '@/hooks/useLeads'
 import { useAcquireLeadLock, useReleaseLeadLock } from '@/hooks/useLeadLock'
 import { useAssignLead } from '@/hooks/useAssignLead'
 import { useAuth } from '@/context/AuthContext'
@@ -15,9 +15,31 @@ import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
 import QualificationForm from '@/components/sales/QualificationForm'
 import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
 import BackButton from '@/components/BackButton'
-import type { Lead } from '@/types/sales'
+import type { Lead, LeadTemperature } from '@/types/sales'
 
 const TEMP_ORDER: Record<string, number> = { hot: 0, warm: 1, cold: 2 }
+
+const SECTION_OPTIONS = [
+  'Ale Section', 'AWSARI', 'Belha Section', 'Loni', 'MCR R', 'MCR U',
+  'Nirgudsar', 'Otur Rural Section', 'Otur Urban Section', 'Ranjani', 'Unmapped Consumer',
+]
+
+const TEMPERATURE_OPTIONS: { value: LeadTemperature; label: string }[] = [
+  { value: 'hot', label: 'Hot' },
+  { value: 'warm', label: 'Warm' },
+  { value: 'cold', label: 'Cold' },
+]
+
+const CALL_OUTCOME_OPTIONS = [
+  { value: 'no_answer', label: 'No Answer' },
+  { value: 'callback_requested', label: 'Call Back' },
+  { value: 'answered', label: 'Answered' },
+  { value: 'busy', label: 'Busy' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'rescheduled', label: 'Rescheduled' },
+  { value: 'incoming_call_barred', label: 'Incoming Call Barred' },
+  { value: 'invalid_phone_number', label: 'Invalid Phone Number' },
+]
 
 function isLeadLocked(lead: Lead): boolean {
   if (!lead.locked_by || !lead.lock_expires_at) return false
@@ -27,20 +49,47 @@ function isLeadLocked(lead: Lead): boolean {
 export default function QueueScreen() {
   const { user } = useAuth()
   const { data: leads = [], isLoading, refetch, isRefetching } = useLeads()
+  const { data: pendingFollowupLeadIds = [] } = usePendingFollowupLeadIds()
   const acquireLock = useAcquireLeadLock()
   const releaseLock = useReleaseLeadLock()
   const assignLead = useAssignLead()
   const [openLead, setOpenLead] = useState<Lead | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
 
+  const [search, setSearch] = useState('')
+  const [village, setVillage] = useState('')
+  const [section, setSection] = useState<string | null>(null)
+  const [temperature, setTemperature] = useState<LeadTemperature | null>(null)
+  const [callOutcome, setCallOutcome] = useState<string | null>(null)
+  const [assignedToMeOnly, setAssignedToMeOnly] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const { data: callOutcomeLeadIds = [] } = useLeadsByLastCallOutcome(callOutcome ?? undefined)
+
+  const activeFilterCount = [village, section, temperature, callOutcome].filter(Boolean).length + (assignedToMeOnly ? 1 : 0)
+
   const queue = useMemo(() => {
-    const result = leads.filter((l) => l.stage === 'new' || l.stage === 'calling')
+    const pendingSet = new Set(pendingFollowupLeadIds)
+    const outcomeSet = callOutcome ? new Set(callOutcomeLeadIds) : null
+    const searchTerm = search.trim().toLowerCase()
+    const villageTerm = village.trim().toLowerCase()
+
+    const result = leads.filter((l) => {
+      if (l.stage !== 'new' && l.stage !== 'calling') return false
+      if (pendingSet.has(l.id)) return false
+      if (assignedToMeOnly && l.assigned_caller_id !== user?.id) return false
+      if (section && l.section !== section) return false
+      if (temperature && l.temperature !== temperature) return false
+      if (outcomeSet && !outcomeSet.has(l.id)) return false
+      if (searchTerm && !l.name.toLowerCase().includes(searchTerm) && !l.phone.includes(searchTerm)) return false
+      if (villageTerm && !(l.address ?? '').toLowerCase().includes(villageTerm)) return false
+      return true
+    })
     return [...result].sort((a, b) => {
       const ta = a.temperature ? TEMP_ORDER[a.temperature] : 3
       const tb = b.temperature ? TEMP_ORDER[b.temperature] : 3
       return ta - tb
     })
-  }, [leads])
+  }, [leads, pendingFollowupLeadIds, callOutcome, callOutcomeLeadIds, assignedToMeOnly, section, temperature, search, village, user?.id])
 
   async function assignToMe(lead: Lead) {
     if (!user) return
@@ -121,9 +170,25 @@ export default function QueueScreen() {
   }
 
   function backToQueue() {
-    Alert.alert('Leave this lead?', 'Any unsaved qualification details will be lost. The lead stays locked to you until you release it or the lock expires.', [
+    Alert.alert('Leave this lead?', 'Any unsaved qualification details will be lost.', [
       { text: 'Keep Editing', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => setOpenLead(null) },
+      {
+        text: 'Leave',
+        style: 'destructive',
+        onPress: async () => {
+          const leadId = openLead?.id
+          setOpenLead(null)
+          if (leadId) {
+            try {
+              await releaseLock.mutateAsync({ leadId })
+            } catch {
+              // Best-effort — still leave the card even if the lock was
+              // already released or expired server-side.
+            }
+            refetch()
+          }
+        },
+      },
     ])
   }
 
@@ -156,6 +221,65 @@ export default function QueueScreen() {
         <Text style={styles.subtitle}>Unassigned and in-progress leads — hot first</Text>
       </View>
 
+      <View style={styles.filterBar}>
+        <TextInput
+          style={styles.searchInput}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search by name or phone…"
+          placeholderTextColor="#9ca3af"
+        />
+        <View style={styles.filterBarRow}>
+          <TouchableOpacity
+            style={[styles.toggleChip, assignedToMeOnly && styles.toggleChipActive]}
+            onPress={() => setAssignedToMeOnly((v) => !v)}
+          >
+            <Text style={[styles.toggleChipText, assignedToMeOnly && styles.toggleChipTextActive]}>Assigned to me</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filtersBtn} onPress={() => setShowFilters((v) => !v)}>
+            <Text style={styles.filtersBtnText}>
+              {showFilters ? 'Hide filters' : 'More filters'}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {showFilters && (
+          <View style={styles.filterPanel}>
+            <TextInput
+              style={styles.searchInput}
+              value={village}
+              onChangeText={setVillage}
+              placeholder="Search by village/address…"
+              placeholderTextColor="#9ca3af"
+            />
+
+            <Text style={styles.filterGroupLabel}>Section</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScrollRow}>
+              <FilterChip label="All" active={!section} onPress={() => setSection(null)} />
+              {SECTION_OPTIONS.map((s) => (
+                <FilterChip key={s} label={s} active={section === s} onPress={() => setSection(section === s ? null : s)} />
+              ))}
+            </ScrollView>
+
+            <Text style={styles.filterGroupLabel}>Temperature</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScrollRow}>
+              <FilterChip label="All" active={!temperature} onPress={() => setTemperature(null)} />
+              {TEMPERATURE_OPTIONS.map((t) => (
+                <FilterChip key={t.value} label={t.label} active={temperature === t.value} onPress={() => setTemperature(temperature === t.value ? null : t.value)} />
+              ))}
+            </ScrollView>
+
+            <Text style={styles.filterGroupLabel}>Call Outcome</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScrollRow}>
+              <FilterChip label="All" active={!callOutcome} onPress={() => setCallOutcome(null)} />
+              {CALL_OUTCOME_OPTIONS.map((o) => (
+                <FilterChip key={o.value} label={o.label} active={callOutcome === o.value} onPress={() => setCallOutcome(callOutcome === o.value ? null : o.value)} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+
       {isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#4ade80" />
@@ -169,7 +293,7 @@ export default function QueueScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>Queue is empty</Text>
-              <Text style={styles.emptySubtitle}>No new or in-progress leads right now.</Text>
+              <Text style={styles.emptySubtitle}>No new or in-progress leads match the current filters.</Text>
             </View>
           }
           renderItem={({ item: lead }) => {
@@ -230,12 +354,36 @@ export default function QueueScreen() {
   )
 }
 
+function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={[styles.filterChip, active && styles.filterChipActive]} onPress={onPress}>
+      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f9fafb' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   title: { fontSize: 20, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  filterBar: { paddingHorizontal: 20, paddingBottom: 10, gap: 8 },
+  searchInput: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  filterBarRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  toggleChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
+  toggleChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
+  toggleChipText: { fontSize: 12, fontWeight: '600', color: '#374151' },
+  toggleChipTextActive: { color: '#052e16' },
+  filtersBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
+  filtersBtnText: { fontSize: 12, fontWeight: '600', color: '#374151' },
+  filterPanel: { gap: 8, marginTop: 4, padding: 12, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb' },
+  filterGroupLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', marginTop: 4 },
+  chipScrollRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
+  filterChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
+  filterChipText: { fontSize: 12, color: '#374151', fontWeight: '500' },
+  filterChipTextActive: { color: '#052e16', fontWeight: '700' },
   listContent: { padding: 16, gap: 12 },
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },

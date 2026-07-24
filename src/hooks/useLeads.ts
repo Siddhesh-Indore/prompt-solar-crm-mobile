@@ -4,6 +4,40 @@ import { supabase } from '@/lib/supabase'
 import { fetchAllRows } from '@/lib/fetchAllRows'
 import type { Lead, LeadFilters } from '@/types/sales'
 
+// Marking a call No Answer or Call Back creates a pending follow_ups row
+// (see QualificationForm) — once that's set, the lead has moved from
+// "needs calling" to "follow up on this date," so the Telecaller Queue
+// hides it. Goes through an RPC (matching the web CRM's useQueuePage)
+// rather than a direct select on follow_ups because follow_ups_select only
+// lets a telecaller see follow-ups assigned to themselves, but the queue's
+// unassigned pool — and this exclusion — needs to apply regardless of who
+// owns the follow-up.
+export function usePendingFollowupLeadIds() {
+  return useQuery({
+    queryKey: ['pending-followup-lead-ids'],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.rpc('get_pending_followup_lead_ids')
+      if (error) throw error
+      return ((data ?? []) as unknown as string[]).filter(Boolean)
+    },
+  })
+}
+
+// Same reasoning as above, for the queue's call-outcome filter —
+// call_logs_select is scoped to the caller's own calls.
+export function useLeadsByLastCallOutcome(outcome: string | undefined) {
+  return useQuery({
+    queryKey: ['leads-by-last-call-outcome', outcome],
+    queryFn: async (): Promise<string[]> => {
+      if (!outcome) return []
+      const { data, error } = await supabase.rpc('get_leads_by_last_call_outcome', { p_outcome: outcome })
+      if (error) throw error
+      return ((data ?? []) as unknown as string[]).filter(Boolean)
+    },
+    enabled: !!outcome,
+  })
+}
+
 export function leadsQueryKey(filters?: LeadFilters) {
   return ['leads', filters ?? {}] as const
 }

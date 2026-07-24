@@ -2,6 +2,15 @@
 // Mirrors the web CRM's QualificationForm — same status->stage/temperature
 // mapping and same side effects (call log, activity row, callback reminder,
 // lock release), rebuilt with plain RN inputs instead of react-hook-form.
+//   No Answer            -> stage=calling, follow_ups entry created (phone
+//                          rang, nobody picked up — distinct from Call Back,
+//                          where the customer was actually reached)
+//   Incoming Call Barred /
+//   Invalid Phone Number -> stage=not_qualified, same as Not Qualified —
+//                          the phone itself isn't reachable, nothing to
+//                          retry by calling again. Logged as their own
+//                          distinct call_logs.outcome so they stay
+//                          filterable on the queue.
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Alert } from 'react-native'
 import { supabase } from '@/lib/supabase'
@@ -9,6 +18,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useUpdateLead } from '@/hooks/useLeadMutations'
 import { useLogCall } from '@/hooks/useCallLogs'
 import { useReleaseLeadLock } from '@/hooks/useLeadLock'
+import { useCreateFollowUp } from '@/hooks/useFollowUps'
 import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
 import ChipSelect from '@/components/sales/ChipSelect'
 import DateTimeField from '@/components/sales/DateTimeField'
@@ -19,7 +29,10 @@ const STATUS_OPTIONS = [
   { value: 'hot', label: 'Hot' },
   { value: 'warm', label: 'Warm' },
   { value: 'cold', label: 'Cold' },
+  { value: 'no_answer', label: 'No Answer' },
   { value: 'call_back', label: 'Call Back' },
+  { value: 'incoming_call_barred', label: 'Incoming Call Barred' },
+  { value: 'invalid_phone_number', label: 'Invalid Phone Number' },
   { value: 'not_qualified', label: 'Not Qualified' },
 ] as const
 
@@ -39,6 +52,7 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
   const updateLead = useUpdateLead()
   const logCall = useLogCall()
   const releaseLock = useReleaseLeadLock()
+  const createFollowUp = useCreateFollowUp()
 
   const [status, setStatus] = useState<Status>('hot')
   const [roofType, setRoofType] = useState<string | undefined>()
@@ -72,6 +86,10 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       setError('Pick a callback date and time.')
       return
     }
+    if (status === 'no_answer' && !callbackDue) {
+      setError('Pick a date and time to try again.')
+      return
+    }
 
     const patch: Partial<Lead> = {
       roof_type: (roofType || null) as Lead['roof_type'],
@@ -89,9 +107,9 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       patch.assigned_exec_id = assignedExecId!
       patch.visit_date = visitDate
       patch.visit_time = visitTime || null
-    } else if (status === 'not_qualified') {
+    } else if (status === 'not_qualified' || status === 'incoming_call_barred' || status === 'invalid_phone_number') {
       patch.stage = 'not_qualified'
-    } else if (status === 'call_back') {
+    } else if (status === 'call_back' || status === 'no_answer') {
       patch.stage = 'calling'
     } else {
       patch.stage = 'calling'
@@ -105,7 +123,11 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       await logCall.mutateAsync({
         lead_id: lead.id,
         call_type: 'qualification',
-        outcome: status === 'call_back' ? 'callback_requested' : 'answered',
+        outcome: status === 'call_back' ? 'callback_requested'
+          : status === 'no_answer' ? 'no_answer'
+          : status === 'incoming_call_barred' ? 'incoming_call_barred'
+          : status === 'invalid_phone_number' ? 'invalid_phone_number'
+          : 'answered',
         notes,
       })
 
@@ -124,6 +146,14 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
           reminder_type: 'callback',
           due_at: new Date(callbackDue).toISOString(),
           note: callbackReason || null,
+        })
+      }
+
+      if (status === 'no_answer' && callbackDue) {
+        await createFollowUp.mutateAsync({
+          lead_id: lead.id,
+          due_at: new Date(callbackDue).toISOString(),
+          reason: callbackReason || 'No answer — try calling again',
         })
       }
 
@@ -181,13 +211,26 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
         </>
       )}
 
-      {status === 'call_back' && (
+      {(status === 'call_back' || status === 'no_answer') && (
         <>
           <View style={styles.field}>
-            <DateTimeField label="Callback Due *" value={callbackDue} onChange={setCallbackDue} mode="datetime" minimumDate={new Date()} placeholder="Pick date & time" />
+            <DateTimeField
+              label={status === 'no_answer' ? 'Try Again On *' : 'Callback Due *'}
+              value={callbackDue}
+              onChange={setCallbackDue}
+              mode="datetime"
+              minimumDate={new Date()}
+              placeholder="Pick date & time"
+            />
           </View>
-          <Field label="Reason">
-            <TextInput style={styles.input} value={callbackReason} onChangeText={setCallbackReason} placeholder="e.g. asked to call after 6pm" placeholderTextColor="#9ca3af" />
+          <Field label={status === 'no_answer' ? 'Note' : 'Reason'}>
+            <TextInput
+              style={styles.input}
+              value={callbackReason}
+              onChangeText={setCallbackReason}
+              placeholder={status === 'no_answer' ? 'e.g. phone kept ringing, no pickup' : 'e.g. asked to call after 6pm'}
+              placeholderTextColor="#9ca3af"
+            />
           </Field>
         </>
       )}
