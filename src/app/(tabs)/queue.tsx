@@ -14,6 +14,7 @@ import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
 import QualificationForm from '@/components/sales/QualificationForm'
 import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
+import CallVisitHistory from '@/components/sales/CallVisitHistory'
 import BackButton from '@/components/BackButton'
 import type { Lead, LeadTemperature } from '@/types/sales'
 
@@ -205,6 +206,7 @@ export default function QueueScreen() {
               </View>
               <LeadSourceBadge source={openLead.source} />
             </View>
+            <CallVisitHistory leadId={openLead.id} />
             <View style={styles.card}>
               <QualificationForm lead={openLead} onDone={() => { setOpenLead(null); refetch() }} />
             </View>

@@ -1,8 +1,25 @@
 // src/hooks/useCallLogs.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import type { CallLog } from '@/types/sales'
+
+export function useCallLogs(leadId: string | undefined) {
+  return useQuery({
+    queryKey: ['call-logs', leadId],
+    queryFn: async (): Promise<CallLog[]> => {
+      if (!leadId) return []
+      const { data, error } = await supabase
+        .from('call_logs')
+        .select('*, caller:caller_id(id, full_name)')
+        .eq('lead_id', leadId)
+        .order('called_at', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as unknown as CallLog[]
+    },
+    enabled: !!leadId,
+  })
+}
 
 export interface NewCallLogInput {
   lead_id: string

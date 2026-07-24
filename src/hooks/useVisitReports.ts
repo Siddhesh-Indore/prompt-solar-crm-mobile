@@ -11,7 +11,7 @@ export function useVisitReports(leadId: string | undefined) {
       if (!leadId) return []
       const { data, error } = await supabase
         .from('visit_reports')
-        .select('*')
+        .select('*, exec:exec_id(id, full_name)')
         .eq('lead_id', leadId)
         .order('visited_at', { ascending: false })
       if (error) throw error

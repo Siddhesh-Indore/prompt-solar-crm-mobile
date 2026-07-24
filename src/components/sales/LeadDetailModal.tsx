@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import StageBadge from '@/components/sales/badges/StageBadge'
 import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
+import CallVisitHistory from '@/components/sales/CallVisitHistory'
 import type { Lead } from '@/types/sales'
 
 function formatDate(d: string | null) {
@@ -79,6 +80,8 @@ export default function LeadDetailModal({ lead, onClose }: LeadDetailModalProps)
               <Text style={styles.notes}>{lead.notes}</Text>
             </Section>
           ) : null}
+
+          <CallVisitHistory leadId={lead.id} />
 
           <Section title="Lead Info">
             <Row label="Created" value={formatDate(lead.created_at)} />

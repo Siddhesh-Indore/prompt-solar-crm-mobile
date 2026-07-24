@@ -79,6 +79,7 @@ export interface CallLog {
   recording_url: string | null
   notes: string | null
   created_at: string
+  caller?: Profile
 }
 
 export interface VisitReport {
@@ -98,6 +99,7 @@ export interface VisitReport {
   longitude: number | null
   location_accuracy: number | null
   photo_url: string | null
+  exec?: Profile
 }
 
 export interface FollowUp {
