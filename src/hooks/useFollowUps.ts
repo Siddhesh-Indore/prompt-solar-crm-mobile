@@ -27,6 +27,9 @@ export interface NewFollowUpInput {
   lead_id: string
   due_at: string
   reason?: string
+  /** Defaults to the current user — pass to target someone else, e.g. a
+   * sales exec routing a lead back to a specific telecaller. */
+  assigned_to?: string
 }
 
 /** Postgres unique_violation — surfaced when a lead already has a pending follow-up. */
@@ -40,7 +43,7 @@ export function useCreateFollowUp() {
     mutationFn: async (input: NewFollowUpInput): Promise<FollowUp> => {
       const { data, error } = await supabase
         .from('follow_ups')
-        .insert({ ...input, assigned_to: user?.id ?? null })
+        .insert({ ...input, assigned_to: input.assigned_to ?? user?.id ?? null })
         .select()
         .single()
       if (error) {

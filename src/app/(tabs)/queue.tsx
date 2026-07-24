@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLeads, usePendingFollowupLeadIds, useLeadsByLastCallOutcome } from '@/hooks/useLeads'
 import { useAcquireLeadLock, useReleaseLeadLock } from '@/hooks/useLeadLock'
 import { useAssignLead } from '@/hooks/useAssignLead'
+import { useSalesTeam } from '@/hooks/useSalesTeam'
 import { useAuth } from '@/context/AuthContext'
 import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
@@ -63,21 +64,38 @@ export default function QueueScreen() {
   const [temperature, setTemperature] = useState<LeadTemperature | null>(null)
   const [callOutcome, setCallOutcome] = useState<string | null>(null)
   const [assignedToMeOnly, setAssignedToMeOnly] = useState(false)
+  const [telecallerFilter, setTelecallerFilter] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const { data: callOutcomeLeadIds = [] } = useLeadsByLastCallOutcome(callOutcome ?? undefined)
+  const { data: telecallers = [] } = useSalesTeam('telecaller')
 
-  const activeFilterCount = [village, section, temperature, callOutcome].filter(Boolean).length + (assignedToMeOnly ? 1 : 0)
+  const activeFilterCount = [village, section, temperature, callOutcome, telecallerFilter].filter(Boolean).length + (assignedToMeOnly ? 1 : 0)
+
+  // "Assigned to me" and the Telecaller chip row both narrow to a single
+  // caller — mutually exclusive so one doesn't silently override the other.
+  function toggleAssignedToMe() {
+    setAssignedToMeOnly((v) => {
+      const next = !v
+      if (next) setTelecallerFilter(null)
+      return next
+    })
+  }
+  function changeTelecallerFilter(id: string | null) {
+    setTelecallerFilter(id)
+    if (id) setAssignedToMeOnly(false)
+  }
 
   const queue = useMemo(() => {
     const pendingSet = new Set(pendingFollowupLeadIds)
     const outcomeSet = callOutcome ? new Set(callOutcomeLeadIds) : null
     const searchTerm = search.trim().toLowerCase()
     const villageTerm = village.trim().toLowerCase()
+    const effectiveCallerId = assignedToMeOnly ? user?.id : telecallerFilter
 
     const result = leads.filter((l) => {
       if (l.stage !== 'new' && l.stage !== 'calling') return false
       if (pendingSet.has(l.id)) return false
-      if (assignedToMeOnly && l.assigned_caller_id !== user?.id) return false
+      if (effectiveCallerId && l.assigned_caller_id !== effectiveCallerId) return false
       if (section && l.section !== section) return false
       if (temperature && l.temperature !== temperature) return false
       if (outcomeSet && !outcomeSet.has(l.id)) return false
@@ -90,7 +108,7 @@ export default function QueueScreen() {
       const tb = b.temperature ? TEMP_ORDER[b.temperature] : 3
       return ta - tb
     })
-  }, [leads, pendingFollowupLeadIds, callOutcome, callOutcomeLeadIds, assignedToMeOnly, section, temperature, search, village, user?.id])
+  }, [leads, pendingFollowupLeadIds, callOutcome, callOutcomeLeadIds, assignedToMeOnly, telecallerFilter, section, temperature, search, village, user?.id])
 
   async function assignToMe(lead: Lead) {
     if (!user) return
@@ -105,8 +123,8 @@ export default function QueueScreen() {
     }
   }
 
-  async function assignExec(lead: Lead, execId: string) {
-    if (!execId) return
+  async function assignExec(lead: Lead, execId: string | null) {
+    if (execId === (lead.assigned_exec_id ?? null)) return
     setBusyId(lead.id)
     try {
       await assignLead.mutateAsync({
@@ -234,7 +252,7 @@ export default function QueueScreen() {
         <View style={styles.filterBarRow}>
           <TouchableOpacity
             style={[styles.toggleChip, assignedToMeOnly && styles.toggleChipActive]}
-            onPress={() => setAssignedToMeOnly((v) => !v)}
+            onPress={toggleAssignedToMe}
           >
             <Text style={[styles.toggleChipText, assignedToMeOnly && styles.toggleChipTextActive]}>Assigned to me</Text>
           </TouchableOpacity>
@@ -278,6 +296,23 @@ export default function QueueScreen() {
                 <FilterChip key={o.value} label={o.label} active={callOutcome === o.value} onPress={() => setCallOutcome(callOutcome === o.value ? null : o.value)} />
               ))}
             </ScrollView>
+
+            {telecallers.length > 0 && (
+              <>
+                <Text style={styles.filterGroupLabel}>Telecaller</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScrollRow}>
+                  <FilterChip label="All" active={!telecallerFilter} onPress={() => changeTelecallerFilter(null)} />
+                  {telecallers.map((t) => (
+                    <FilterChip
+                      key={t.id}
+                      label={t.full_name}
+                      active={telecallerFilter === t.id}
+                      onPress={() => changeTelecallerFilter(telecallerFilter === t.id ? null : t.id)}
+                    />
+                  ))}
+                </ScrollView>
+              </>
+            )}
           </View>
         )}
       </View>

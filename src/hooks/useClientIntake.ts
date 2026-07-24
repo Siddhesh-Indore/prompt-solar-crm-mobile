@@ -36,16 +36,21 @@ export function useCreateClientIntakeForm() {
         .single()
       if (error) throw error
 
-      // The lead is NOT marked converted here anymore — submitting the
-      // intake form sends it to the customer on WhatsApp (filled PDF +
-      // Approve/Disapprove) via whatsapp-notify, and only a genuine Approve
-      // tap (relayed back through wa-approval-callback) sets stage=converted
-      // and pushes the Meta/Google conversion signal.
+      // Filling the intake form is the sales exec's own signal that the
+      // deal is won — the lead moves to 'converted' immediately, which is
+      // what drops it off the exec's Todo/Visits lists. The customer still
+      // gets the WhatsApp Approve/Disapprove notification below for their
+      // own record, but it no longer gates the lead's stage the way it
+      // used to (push-conversion, the Meta/Google ad platform signal,
+      // still only fires from wa-approval-callback on a genuine Approve
+      // tap — that timing is unchanged).
+      await supabase.from('leads').update({ stage: 'converted' }).eq('id', input.lead_id)
+
       await supabase.from('lead_activities').insert({
         lead_id: input.lead_id,
         actor_id: user?.id ?? null,
         action_type: 'intake_form_filled',
-        new_value: { payment_method: input.payment_method, total_cost: input.total_cost },
+        new_value: { payment_method: input.payment_method, total_cost: input.total_cost, stage: 'converted' },
       })
 
       supabase.functions.invoke('whatsapp-notify', { body: { leadId: input.lead_id, event: 'finalized' } }).catch(() => {})

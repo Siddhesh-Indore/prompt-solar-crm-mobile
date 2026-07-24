@@ -7,7 +7,7 @@ import { useSalesTeam } from '@/hooks/useSalesTeam'
 
 interface Props {
   value: string | null
-  onChange: (execId: string) => void
+  onChange: (execId: string | null) => void
   required?: boolean
 }
 
@@ -35,6 +35,16 @@ export default function ExecAssignPicker({ value, onChange, required }: Props) {
             <FlatList
               data={execs}
               keyExtractor={(e) => e.id}
+              ListHeaderComponent={
+                required ? null : (
+                  <TouchableOpacity
+                    style={styles.row}
+                    onPress={() => { onChange(null); setOpen(false) }}
+                  >
+                    <Text style={styles.rowText}>Unassigned</Text>
+                  </TouchableOpacity>
+                )
+              }
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.row}

@@ -7,7 +7,8 @@ import type { Lead } from '@/types/sales'
 interface AssignInput {
   leadId: string
   role: 'telecaller' | 'sales_exec'
-  userId: string
+  /** null clears the assignment. */
+  userId: string | null
   previousUserId?: string | null
 }
 
@@ -23,19 +24,22 @@ export function useAssignLead() {
       if (!data || data.length === 0) throw new Error('Not allowed to assign this lead')
 
       const actionType = role === 'telecaller'
-        ? (previousUserId ? 'caller_reassigned' : 'caller_assigned')
-        : (previousUserId ? 'exec_reassigned' : 'exec_assigned')
+        ? (userId ? (previousUserId ? 'caller_reassigned' : 'caller_assigned') : 'caller_unassigned')
+        : (userId ? (previousUserId ? 'exec_reassigned' : 'exec_assigned') : 'exec_unassigned')
 
-      const idsToName = [userId, ...(previousUserId ? [previousUserId] : [])]
-      const { data: namedProfiles } = await supabase.from('profiles').select('id, full_name').in('id', idsToName)
-      const nameById = new Map((namedProfiles ?? []).map((p) => [p.id, p.full_name]))
+      const idsToName = [userId, previousUserId].filter((id): id is string => !!id)
+      let nameById = new Map<string, string>()
+      if (idsToName.length > 0) {
+        const { data: namedProfiles } = await supabase.from('profiles').select('id, full_name').in('id', idsToName)
+        nameById = new Map((namedProfiles ?? []).map((p) => [p.id, p.full_name]))
+      }
 
       await supabase.from('lead_activities').insert({
         lead_id: leadId,
         actor_id: user?.id ?? null,
         action_type: actionType,
         old_value: previousUserId ? { [column]: previousUserId, assignee_name: nameById.get(previousUserId) ?? null } : null,
-        new_value: { [column]: userId, role, assignee_name: nameById.get(userId) ?? null },
+        new_value: userId ? { [column]: userId, role, assignee_name: nameById.get(userId) ?? null } : null,
       })
     },
     onSuccess: (_data, variables) => {

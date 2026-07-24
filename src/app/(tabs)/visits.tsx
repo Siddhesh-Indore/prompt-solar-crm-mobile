@@ -15,6 +15,7 @@ import StageBadge from '@/components/sales/badges/StageBadge'
 import PostVisitForm from '@/components/sales/PostVisitForm'
 import PreVisitCallForm from '@/components/sales/PreVisitCallForm'
 import ClientIntakeForm from '@/components/sales/ClientIntakeForm'
+import ReassignToTelecallerForm from '@/components/sales/ReassignToTelecallerForm'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
@@ -28,6 +29,7 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
   const [recording, setRecording] = useState(false)
   const [loggingCall, setLoggingCall] = useState(false)
   const [fillingIntake, setFillingIntake] = useState(false)
+  const [sendingToTelecaller, setSendingToTelecaller] = useState(false)
   const outcome = useLatestVisitOutcome(lead.id)
   const { data: intakeForm } = useClientIntakeForm(lead.id)
 
@@ -75,6 +77,14 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
 
       {intakeForm && <Text style={styles.hintDone}>Intake form submitted.</Text>}
 
+      {!intakeForm && !sendingToTelecaller && (
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setSendingToTelecaller(true)}>
+            <Text style={styles.secondaryBtnText}>Send to Telecaller</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <FormSheet visible={loggingCall} title="Log Pre-Visit Call" onClose={() => setLoggingCall(false)}>
         <PreVisitCallForm lead={lead} onDone={() => { setLoggingCall(false); onDone() }} onCancel={() => setLoggingCall(false)} />
       </FormSheet>
@@ -85,6 +95,10 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
 
       <FormSheet visible={fillingIntake} title="Client Intake Form" onClose={() => setFillingIntake(false)}>
         <ClientIntakeForm lead={lead} onDone={() => { setFillingIntake(false); onDone() }} onCancel={() => setFillingIntake(false)} />
+      </FormSheet>
+
+      <FormSheet visible={sendingToTelecaller} title="Send Back to Telecaller" onClose={() => setSendingToTelecaller(false)}>
+        <ReassignToTelecallerForm lead={lead} onDone={() => { setSendingToTelecaller(false); onDone() }} onCancel={() => setSendingToTelecaller(false)} />
       </FormSheet>
     </View>
   )
