@@ -52,19 +52,20 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
         </View>
       </TouchableOpacity>
 
-      {lead.stage === 'visit_fixed' && !recording && !loggingCall && (
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setLoggingCall(true)}>
-            <Text style={styles.secondaryBtnText}>Log Pre-Visit Call</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setRecording(true)}>
-            <Text style={styles.primaryBtnText}>Record Visit</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {lead.stage === 'visited' && outcome !== 'finalized' && (
-        <Text style={styles.hint}>Awaiting follow-up or next visit.</Text>
+      {(lead.stage === 'visit_fixed' || (lead.stage === 'visited' && outcome !== 'finalized')) && !recording && !loggingCall && (
+        <>
+          {lead.stage === 'visited' && (
+            <Text style={styles.hint}>Awaiting follow-up — log another visit below if you've been back.</Text>
+          )}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setLoggingCall(true)}>
+              <Text style={styles.secondaryBtnText}>Log Pre-Visit Call</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => setRecording(true)}>
+              <Text style={styles.primaryBtnText}>Record Visit</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       {lead.stage === 'visited' && outcome === 'finalized' && !intakeForm && !fillingIntake && (

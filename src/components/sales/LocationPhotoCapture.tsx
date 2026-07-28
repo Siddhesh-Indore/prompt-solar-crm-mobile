@@ -35,6 +35,17 @@ export default function LocationPhotoCapture({ value, onChange }: LocationPhotoC
         return
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
+      // Android surfaces Location.isFromMockProvider() here — set when a
+      // fake-GPS app has been enabled as the device's mock location
+      // provider (Developer Options). Refuse the fix outright rather than
+      // silently recording it, so a spoofed visit can't slip through.
+      if (position.mocked) {
+        Alert.alert(
+          'Mock location detected',
+          "This device has a fake GPS / mock location app turned on. Turn it off in Developer Options (or uninstall it) and try again — a visit can't be recorded with a spoofed location.",
+        )
+        return
+      }
       onChange({
         ...value,
         latitude: position.coords.latitude,
@@ -48,18 +59,9 @@ export default function LocationPhotoCapture({ value, onChange }: LocationPhotoC
     }
   }
 
-  async function pickFromLibrary() {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Photos permission needed', 'Turn on photo library access for this app in your phone settings.')
-      return
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 })
-    if (!result.canceled && result.assets[0]) {
-      onChange({ ...value, photoUri: result.assets[0].uri })
-    }
-  }
-
+  // Camera only — no gallery picker. Letting staff choose from the library
+  // would let them upload an old or unrelated photo instead of one actually
+  // taken at the site.
   async function takePhoto() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync()
     if (status !== 'granted') {
@@ -70,14 +72,6 @@ export default function LocationPhotoCapture({ value, onChange }: LocationPhotoC
     if (!result.canceled && result.assets[0]) {
       onChange({ ...value, photoUri: result.assets[0].uri })
     }
-  }
-
-  function choosePhotoSource() {
-    Alert.alert('Add Site Photo', undefined, [
-      { text: 'Take Photo', onPress: takePhoto },
-      { text: 'Choose from Library', onPress: pickFromLibrary },
-      { text: 'Cancel', style: 'cancel' },
-    ])
   }
 
   const hasLocation = value.latitude != null && value.longitude != null
@@ -104,9 +98,9 @@ export default function LocationPhotoCapture({ value, onChange }: LocationPhotoC
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.button, hasPhoto && styles.buttonDone]} onPress={choosePhotoSource}>
+      <TouchableOpacity style={[styles.button, hasPhoto && styles.buttonDone]} onPress={takePhoto}>
         <Text style={[styles.buttonText, hasPhoto && styles.buttonTextDone]}>
-          {hasPhoto ? '📷 Photo added — tap to change' : '📷 Add Site Photo'}
+          {hasPhoto ? '📷 Photo added — tap to retake' : '📷 Take Site Photo'}
         </Text>
       </TouchableOpacity>
 
