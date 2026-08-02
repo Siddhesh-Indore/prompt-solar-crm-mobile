@@ -2,6 +2,13 @@
 // Mirrors the web CRM's QualificationForm — same status->stage/temperature
 // mapping and same side effects (call log, activity row, callback reminder,
 // lock release), rebuilt with plain RN inputs instead of react-hook-form.
+//   Call Back            -> stage=calling, follow_ups entry created (same
+//                          mechanism as No Answer, so it's excluded from
+//                          the queue until due and shows up on the
+//                          Follow-ups/To-Do list) PLUS a reminders row for
+//                          the notification bell's live badge — follow_ups
+//                          and reminders serve different UIs and both need
+//                          to exist for a callback.
 //   No Answer            -> stage=calling, follow_ups entry created (phone
 //                          rang, nobody picked up — distinct from Call Back,
 //                          where the customer was actually reached)
@@ -11,7 +18,7 @@
 //                          retry by calling again. Logged as their own
 //                          distinct call_logs.outcome so they stay
 //                          filterable on the queue.
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Alert } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -38,6 +45,18 @@ const STATUS_OPTIONS = [
 
 type Status = (typeof STATUS_OPTIONS)[number]['value']
 
+// The form always used to open on "Hot" no matter the lead's actual current
+// status — easy to save over a Cold/Warm/Call Back lead by accident just by
+// submitting without noticing. Pre-select from the lead's real stage/
+// temperature instead; call_back/no_answer/etc. are one-off call outcomes,
+// not persisted classifications, so they're never a sensible default here.
+function defaultStatusFor(lead: Lead): Status {
+  if (lead.stage === 'visit_fixed') return 'visit_fixed'
+  if (lead.stage === 'not_qualified') return 'not_qualified'
+  if (lead.temperature) return lead.temperature
+  return 'hot'
+}
+
 const ROOF_OPTIONS = [{ value: 'rcc', label: 'RCC' }, { value: 'metal_terrace', label: 'Metal Terrace' }] as const
 const OWNERSHIP_OPTIONS = [{ value: 'owned', label: 'Owned' }, { value: 'rented', label: 'Rented' }] as const
 const PROPERTY_OPTIONS = [{ value: 'residential', label: 'Residential' }, { value: 'commercial', label: 'Commercial' }] as const
@@ -54,7 +73,8 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
   const releaseLock = useReleaseLeadLock()
   const createFollowUp = useCreateFollowUp()
 
-  const [status, setStatus] = useState<Status>('hot')
+  const initialStatus = useMemo(() => defaultStatusFor(lead), [lead])
+  const [status, setStatus] = useState<Status>(initialStatus)
   const [roofType, setRoofType] = useState<string | undefined>()
   const [ownership, setOwnership] = useState<string | undefined>()
   const [propertyType, setPropertyType] = useState<string | undefined>()
@@ -139,6 +159,14 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
         new_value: { stage: patch.stage, temperature: patch.temperature ?? null, status },
       })
 
+      if ((status === 'call_back' || status === 'no_answer') && callbackDue) {
+        await createFollowUp.mutateAsync({
+          lead_id: lead.id,
+          due_at: new Date(callbackDue).toISOString(),
+          reason: callbackReason || (status === 'call_back' ? 'Callback requested' : 'No answer — try calling again'),
+        })
+      }
+
       if (status === 'call_back' && callbackDue) {
         await supabase.from('reminders').insert({
           lead_id: lead.id,
@@ -146,14 +174,6 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
           reminder_type: 'callback',
           due_at: new Date(callbackDue).toISOString(),
           note: callbackReason || null,
-        })
-      }
-
-      if (status === 'no_answer' && callbackDue) {
-        await createFollowUp.mutateAsync({
-          lead_id: lead.id,
-          due_at: new Date(callbackDue).toISOString(),
-          reason: callbackReason || 'No answer — try calling again',
         })
       }
 
@@ -172,7 +192,7 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
   }
 
   function handleRelease() {
-    const hasInput = status !== 'hot' || roofType || ownership || propertyType || billAmount
+    const hasInput = status !== initialStatus || roofType || ownership || propertyType || billAmount
       || quoteMin || quoteMax || competitorContacted || assignedExecId || visitDate || visitTime
       || callbackDue || callbackReason || notes
     if (!hasInput) {

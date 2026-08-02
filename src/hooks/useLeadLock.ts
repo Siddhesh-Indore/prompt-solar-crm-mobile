@@ -2,6 +2,7 @@
 // Wraps the acquire_lead_lock / release_lead_lock RPCs (same as the web CRM).
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { Lead } from '@/types/sales'
 
 interface AcquireLockResult {
   acquired: boolean
@@ -37,7 +38,17 @@ export function useReleaseLeadLock() {
       if (error) throw error
       return data as ReleaseLockResult
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
+      // Same full-table-refetch staleness as useAssignLead/useUpdateLead —
+      // "released: true" unambiguously means these three fields are now
+      // null server-side, so patch the cache directly rather than leaving
+      // the card reading "Locked by ..." until the slow background
+      // invalidateQueries refetch catches up.
+      if (data.released) {
+        queryClient.setQueriesData<Lead[]>({ queryKey: ['leads'] }, (old) =>
+          old?.map((l) => (l.id === variables.leadId ? { ...l, locked_by: null, locked_at: null, lock_expires_at: null } : l))
+        )
+      }
       queryClient.invalidateQueries({ queryKey: ['leads'] })
       queryClient.invalidateQueries({ queryKey: ['lead', variables.leadId] })
     },
