@@ -34,6 +34,9 @@ export function useUpdateLead() {
         old?.map((l) => (l.id === variables.id ? { ...l, ...data } : l))
       )
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      // Queue's server-paginated cache (useQueuePage) is a separate query
+      // key, not covered by the ['leads'] patch/invalidate above.
+      queryClient.invalidateQueries({ queryKey: ['queue-page'] })
       queryClient.invalidateQueries({ queryKey: ['lead', variables.id] })
 
       if (variables.previousStage !== 'visit_fixed' && data.stage === 'visit_fixed') {

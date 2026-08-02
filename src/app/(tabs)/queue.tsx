@@ -3,10 +3,10 @@
 // sorted hot -> warm -> cold. Opening a lead acquires the lock; submitting or
 // releasing the qualification form releases it. Mirrors the web CRM's
 // TelecallerQueuePage.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLeads, usePendingFollowupLeadIds, useLeadsByLastCallOutcome } from '@/hooks/useLeads'
+import { useQueuePage, usePendingFollowupLeadIds, useLeadsByLastCallOutcome } from '@/hooks/useLeads'
 import { useAcquireLeadLock, useReleaseLeadLock } from '@/hooks/useLeadLock'
 import { useAssignLead } from '@/hooks/useAssignLead'
 import { useSalesTeam } from '@/hooks/useSalesTeam'
@@ -18,8 +18,6 @@ import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
 import CallVisitHistory from '@/components/sales/CallVisitHistory'
 import BackButton from '@/components/BackButton'
 import type { Lead, LeadTemperature } from '@/types/sales'
-
-const TEMP_ORDER: Record<string, number> = { hot: 0, warm: 1, cold: 2 }
 
 const SECTION_OPTIONS = [
   'Ale Section', 'AWSARI', 'Belha Section', 'Loni', 'MCR R', 'MCR U',
@@ -50,8 +48,6 @@ function isLeadLocked(lead: Lead): boolean {
 
 export default function QueueScreen() {
   const { user } = useAuth()
-  const { data: leads = [], isLoading, refetch, isRefetching } = useLeads()
-  const { data: pendingFollowupLeadIds = [] } = usePendingFollowupLeadIds()
   const acquireLock = useAcquireLeadLock()
   const releaseLock = useReleaseLeadLock()
   const assignLead = useAssignLead()
@@ -59,14 +55,27 @@ export default function QueueScreen() {
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
   const [village, setVillage] = useState('')
+  const [debouncedVillage, setDebouncedVillage] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedVillage(village.trim()), 300)
+    return () => clearTimeout(t)
+  }, [village])
+
   const [section, setSection] = useState<string | null>(null)
   const [temperature, setTemperature] = useState<LeadTemperature | null>(null)
   const [callOutcome, setCallOutcome] = useState<string | null>(null)
   const [assignedToMeOnly, setAssignedToMeOnly] = useState(false)
   const [telecallerFilter, setTelecallerFilter] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
-  const { data: callOutcomeLeadIds = [] } = useLeadsByLastCallOutcome(callOutcome ?? undefined)
+  const { data: pendingFollowupLeadIds = [] } = usePendingFollowupLeadIds()
+  const { data: callOutcomeLeadIds } = useLeadsByLastCallOutcome(callOutcome ?? undefined)
   const { data: telecallers = [] } = useSalesTeam('telecaller')
 
   const activeFilterCount = [village, section, temperature, callOutcome, telecallerFilter].filter(Boolean).length + (assignedToMeOnly ? 1 : 0)
@@ -85,30 +94,22 @@ export default function QueueScreen() {
     if (id) setAssignedToMeOnly(false)
   }
 
-  const queue = useMemo(() => {
-    const pendingSet = new Set(pendingFollowupLeadIds)
-    const outcomeSet = callOutcome ? new Set(callOutcomeLeadIds) : null
-    const searchTerm = search.trim().toLowerCase()
-    const villageTerm = village.trim().toLowerCase()
-    const effectiveCallerId = assignedToMeOnly ? user?.id : telecallerFilter
+  const effectiveCallerId = assignedToMeOnly ? (user?.id ?? null) : telecallerFilter
 
-    const result = leads.filter((l) => {
-      if (l.stage !== 'new' && l.stage !== 'calling') return false
-      if (pendingSet.has(l.id)) return false
-      if (effectiveCallerId && l.assigned_caller_id !== effectiveCallerId) return false
-      if (section && l.section !== section) return false
-      if (temperature && l.temperature !== temperature) return false
-      if (outcomeSet && !outcomeSet.has(l.id)) return false
-      if (searchTerm && !l.name.toLowerCase().includes(searchTerm) && !l.phone.includes(searchTerm)) return false
-      if (villageTerm && !(l.address ?? '').toLowerCase().includes(villageTerm)) return false
-      return true
-    })
-    return [...result].sort((a, b) => {
-      const ta = a.temperature ? TEMP_ORDER[a.temperature] : 3
-      const tb = b.temperature ? TEMP_ORDER[b.temperature] : 3
-      return ta - tb
-    })
-  }, [leads, pendingFollowupLeadIds, callOutcome, callOutcomeLeadIds, assignedToMeOnly, telecallerFilter, section, temperature, search, village, user?.id])
+  const queuePageFilters = useMemo(() => ({
+    section,
+    village: debouncedVillage,
+    search: debouncedSearch,
+    temperature,
+    assignedCallerId: effectiveCallerId,
+    excludeLeadIds: pendingFollowupLeadIds,
+    callOutcomeLeadIds: callOutcome ? (callOutcomeLeadIds ?? []) : null,
+  }), [section, debouncedVillage, debouncedSearch, temperature, effectiveCallerId, pendingFollowupLeadIds, callOutcome, callOutcomeLeadIds])
+
+  const {
+    data, isLoading, refetch, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useQueuePage(queuePageFilters)
+  const queue = useMemo(() => data?.pages.flatMap((p) => p.leads) ?? [], [data])
 
   async function assignToMe(lead: Lead) {
     if (!user) return
@@ -327,6 +328,15 @@ export default function QueueScreen() {
           keyExtractor={(l) => l.id}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+          onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator size="small" color="#4ade80" />
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>Queue is empty</Text>
@@ -422,6 +432,7 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 12, color: '#374151', fontWeight: '500' },
   filterChipTextActive: { color: '#052e16', fontWeight: '700' },
   listContent: { padding: 16, gap: 12 },
+  loadingMore: { paddingVertical: 20, alignItems: 'center' },
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
   emptySubtitle: { fontSize: 12, color: '#9ca3af', marginTop: 4 },

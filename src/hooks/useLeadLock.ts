@@ -25,6 +25,10 @@ export function useAcquireLeadLock() {
     },
     onSuccess: (_data, leadId) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      // Queue's server-paginated cache (useQueuePage) is a separate query
+      // key from ['leads'] — a lock acquisition changes locked_by, which
+      // the queue card renders.
+      queryClient.invalidateQueries({ queryKey: ['queue-page'] })
       queryClient.invalidateQueries({ queryKey: ['lead', leadId] })
     },
   })
@@ -50,6 +54,9 @@ export function useReleaseLeadLock() {
         )
       }
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      // Queue's server-paginated cache (useQueuePage) is a separate query
+      // key, not covered by the ['leads'] patch/invalidate above.
+      queryClient.invalidateQueries({ queryKey: ['queue-page'] })
       queryClient.invalidateQueries({ queryKey: ['lead', variables.leadId] })
     },
   })

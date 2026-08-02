@@ -70,6 +70,9 @@ export function useAssignLead() {
       )
 
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      // Queue's server-paginated cache (useQueuePage) is a separate query
+      // key, not covered by the ['leads'] patch/invalidate above.
+      queryClient.invalidateQueries({ queryKey: ['queue-page'] })
       queryClient.invalidateQueries({ queryKey: ['lead', variables.leadId] })
       queryClient.invalidateQueries({ queryKey: ['lead-activities', variables.leadId] })
     },

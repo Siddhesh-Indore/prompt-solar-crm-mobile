@@ -105,16 +105,22 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
   )
 }
 
+const VISIT_FILTERS_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
+
 export default function VisitsScreen() {
   const { user } = useAuth()
-  const { data: leads = [], isLoading, refetch, isRefetching } = useLeads()
+  // Scoped to this exec's own visit-stage leads (a naturally small set)
+  // rather than the old useLeads() + client-side filter over every lead in
+  // the table.
+  const { data: leads = [], isLoading, refetch, isRefetching } = useLeads(
+    user ? { stageIn: VISIT_FILTERS_STAGES, assignedExecId: user.id } : undefined,
+    { enabled: !!user }
+  )
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
 
   const myVisits = useMemo(() => {
-    return leads
-      .filter((l) => (l.stage === 'visit_fixed' || l.stage === 'visited') && l.assigned_exec_id === user?.id)
-      .sort((a, b) => (a.visit_date ?? '').localeCompare(b.visit_date ?? ''))
-  }, [leads, user])
+    return [...leads].sort((a, b) => (a.visit_date ?? '').localeCompare(b.visit_date ?? ''))
+  }, [leads])
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

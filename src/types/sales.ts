@@ -163,8 +163,20 @@ export interface ClientIntakeForm {
 export interface LeadFilters {
   source?: LeadSource
   stage?: LeadStage
+  stageIn?: LeadStage[]
   temperature?: LeadTemperature
+  section?: string
   search?: string
+  // Partial match against the free-text address field — mirrors the web
+  // CRM's LeadFilters (no dedicated village column).
+  village?: string
+  // The lead's most recent call_logs.outcome (see get_leads_by_last_call_outcome).
+  callOutcome?: string
+  // Narrow to leads assigned (as caller) to this specific user — the
+  // Telecaller Queue's "Assigned to me" toggle and Telecaller filter.
+  assignedCallerId?: string
+  // Narrow to leads assigned (as exec) to this specific user.
+  assignedExecId?: string
 }
 
 // Reference list of already-completed installations — not tied to the

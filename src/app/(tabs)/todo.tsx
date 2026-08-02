@@ -130,13 +130,19 @@ function VisitCard({ lead, onOpenDetail }: { lead: Lead; onOpenDetail: () => voi
 export default function TodoScreen() {
   const { user, profile } = useAuth()
   const showsVisits = profile?.role === 'sales_exec' || profile?.role === 'admin' || profile?.role === 'manager'
-  const { data: leads = [], isLoading: leadsLoading, refetch: refetchLeads, isRefetching: leadsRefetching } = useLeads()
+  // Scoped to this exec's own visit_fixed leads (a naturally small set)
+  // rather than the old useLeads() + client-side filter over every lead in
+  // the table. Telecallers never see visits here, so skip the fetch entirely.
+  const { data: leads = [], isLoading: leadsLoading, refetch: refetchLeads, isRefetching: leadsRefetching } = useLeads(
+    user ? { stage: 'visit_fixed', assignedExecId: user.id } : undefined,
+    { enabled: !!user && showsVisits }
+  )
   const { data: followUps = [], isLoading: followUpsLoading, refetch: refetchFollowUps, isRefetching: followUpsRefetching } = useMyFollowUps()
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
 
   const items = useMemo(() => {
     const visitItems: TodoItem[] = leads
-      .filter((l) => l.stage === 'visit_fixed' && l.assigned_exec_id === user?.id && l.visit_date)
+      .filter((l) => l.visit_date)
       .map((lead) => ({ kind: 'visit' as const, sortKey: lead.visit_date!, lead }))
 
     const followUpItems: TodoItem[] = followUps
@@ -153,7 +159,7 @@ export default function TodoScreen() {
       }))
 
     return [...visitItems, ...followUpItems].sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-  }, [leads, followUps, user])
+  }, [leads, followUps])
 
   const overdue = items.filter((i) => bucketOf(i.sortKey) === 'overdue')
   const today = items.filter((i) => bucketOf(i.sortKey) === 'today')
