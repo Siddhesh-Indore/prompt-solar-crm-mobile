@@ -34,13 +34,13 @@ export interface NewVisitReportInput {
   outcome: VisitReport['outcome']
   next_step?: string
   notes?: string
-  // Mandatory — see migration 027. Not marked optional here on purpose:
-  // callers (PostVisitForm) must have already captured these before this
-  // mutation ever runs, and the DB itself rejects a row missing any of them.
+  // latitude/longitude mandatory on every visit; photo_url only mandatory on
+  // the first (migration 061) — callers (PostVisitForm) enforce exactly this
+  // before the mutation ever runs, and the DB's CHECK constraint mirrors it.
   latitude: number
   longitude: number
   location_accuracy: number | null
-  photo_url: string
+  photo_url?: string
 }
 
 export function useCreateVisitReport() {

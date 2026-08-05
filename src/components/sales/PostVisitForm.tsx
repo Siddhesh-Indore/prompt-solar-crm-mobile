@@ -10,7 +10,7 @@
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { useAuth } from '@/context/AuthContext'
-import { useCreateVisitReport, type NewVisitReportInput } from '@/hooks/useVisitReports'
+import { useCreateVisitReport, useVisitReports, type NewVisitReportInput } from '@/hooks/useVisitReports'
 import { useUpdateLead } from '@/hooks/useLeadMutations'
 import { uploadVisitPhoto } from '@/lib/uploadVisitPhoto'
 import ChipSelect from '@/components/sales/ChipSelect'
@@ -36,6 +36,11 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
   const { user } = useAuth()
   const createVisitReport = useCreateVisitReport()
   const updateLead = useUpdateLead()
+  // Photo's only mandatory the first time — by the second trip back to the
+  // same site there's nothing new to prove with another photo, and it was
+  // blocking execs from logging the outcome (migration 061).
+  const { data: existingVisits = [] } = useVisitReports(lead.id)
+  const isFirstVisit = existingVisits.length === 0
 
   const [outcome, setOutcome] = useState<NonNullable<NewVisitReportInput['outcome']>>('finalized')
   const [kwInterest, setKwInterest] = useState('')
@@ -64,14 +69,16 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
       setError('Capture the site location before saving — required for every visit.')
       return
     }
-    if (!locationPhoto.photoUri) {
-      setError('Add a site photo before saving — required for every visit.')
+    if (isFirstVisit && !locationPhoto.photoUri) {
+      setError('Add a site photo before saving — required for the first visit.')
       return
     }
 
     setSubmitting(true)
     try {
-      const photoPath = await uploadVisitPhoto(user!.id, lead.id, locationPhoto.photoUri)
+      const photoPath = locationPhoto.photoUri
+        ? await uploadVisitPhoto(user!.id, lead.id, locationPhoto.photoUri)
+        : undefined
 
       await createVisitReport.mutateAsync({
         lead_id: lead.id,
@@ -140,7 +147,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         <ChipSelect options={OUTCOME_OPTIONS} value={outcome} onChange={setOutcome} />
       </Field>
 
-      <LocationPhotoCapture value={locationPhoto} onChange={setLocationPhoto} />
+      <LocationPhotoCapture value={locationPhoto} onChange={setLocationPhoto} photoRequired={isFirstVisit} />
 
       {showNextVisitFields && (
         <View style={styles.row2}>

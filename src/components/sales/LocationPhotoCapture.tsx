@@ -18,9 +18,12 @@ export interface LocationPhotoValue {
 interface LocationPhotoCaptureProps {
   value: LocationPhotoValue
   onChange: (value: LocationPhotoValue) => void
+  /** Defaults to true — pass false once the site's already been photographed
+   * on an earlier visit for this lead (see PostVisitForm). */
+  photoRequired?: boolean
 }
 
-export default function LocationPhotoCapture({ value, onChange }: LocationPhotoCaptureProps) {
+export default function LocationPhotoCapture({ value, onChange, photoRequired = true }: LocationPhotoCaptureProps) {
   const [locating, setLocating] = useState(false)
 
   async function captureLocation() {
@@ -79,8 +82,13 @@ export default function LocationPhotoCapture({ value, onChange }: LocationPhotoC
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Site Location & Photo <Text style={styles.required}>*</Text></Text>
-      <Text style={styles.hint}>Required for every visit, even if not finalized.</Text>
+      <Text style={styles.label}>
+        Site Location {photoRequired && '& Photo'} <Text style={styles.required}>*</Text>
+        {!photoRequired && <Text style={styles.optionalNote}> (photo optional — already captured earlier)</Text>}
+      </Text>
+      <Text style={styles.hint}>
+        {photoRequired ? 'Both required for every visit, even if not finalized.' : 'Location is still required; retake the photo only if you want to update it.'}
+      </Text>
 
       <TouchableOpacity
         style={[styles.button, hasLocation && styles.buttonDone]}
@@ -115,6 +123,7 @@ const styles = StyleSheet.create({
   wrap: { marginBottom: 14 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 2 },
   required: { color: '#dc2626' },
+  optionalNote: { color: '#9ca3af', fontWeight: '400' },
   hint: { fontSize: 11, color: '#9ca3af', marginBottom: 8 },
   button: {
     borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingVertical: 12,
