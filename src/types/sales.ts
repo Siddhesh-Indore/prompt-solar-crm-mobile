@@ -20,6 +20,7 @@ export type LeadSource =
   | 'cold_call'
   | 'owner_ref'
   | 'employee_ref'
+  | 'customer_ref'
   | 'manual'
 
 export const LEAD_SOURCES: { value: LeadSource; label: string }[] = [
@@ -29,6 +30,7 @@ export const LEAD_SOURCES: { value: LeadSource; label: string }[] = [
   { value: 'cold_call', label: 'Cold Call' },
   { value: 'owner_ref', label: 'Owner Ref' },
   { value: 'employee_ref', label: 'Employee Ref' },
+  { value: 'customer_ref', label: 'Customer Ref' },
   { value: 'manual', label: 'Manual' },
 ]
 
@@ -125,6 +127,8 @@ export interface ClientIntakeForm {
   phone: string
   email: string | null
   age: number | null
+  customer_type: 'residential' | 'commercial' | 'housing_society'
+  subsidy_amount: number | null
   kw: number
   roof_type: 'rcc' | 'roofing_metal_sheets' | null
   panel_company: 'adani' | 'waaree' | 'other' | null
@@ -137,6 +141,7 @@ export interface ClientIntakeForm {
   payment_method: 'cash' | 'loan'
   total_cost: number
   cash_advance: number | null
+  advance_mode: 'cash' | 'online' | null
   cash_remaining_after_install: number | null
   cash_subsidy_after_dispersal: number | null
   loan_bank_name: string | null
@@ -154,6 +159,14 @@ export interface ClientIntakeForm {
   scope_stamp_paper: boolean
   scope_concrete_block: boolean
   scope_earthing: boolean
+  photo_paths: string[]
+  name_change_required: boolean
+  namechange_doc_aadhaar: boolean
+  namechange_doc_house_8a: boolean
+  namechange_bill_holder_deceased: boolean
+  namechange_doc_death_certificate: boolean
+  namechange_meter_owned_by_other: boolean
+  namechange_doc_sammati_patra: boolean
   client_signature_url: string | null
   salesman_signature_url: string | null
   created_at: string

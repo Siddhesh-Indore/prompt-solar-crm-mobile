@@ -9,6 +9,7 @@ const SOURCE_LABEL: Record<LeadSource, string> = {
   cold_call: 'Cold Call',
   owner_ref: 'Owner Ref',
   employee_ref: 'Employee Ref',
+  customer_ref: 'Customer Ref',
   manual: 'Manual',
 }
 
@@ -19,6 +20,7 @@ const SOURCE_COLORS: Record<LeadSource, { bg: string; text: string; border: stri
   cold_call: { bg: '#e0e7ff', text: '#4338ca', border: '#c7d2fe' },
   owner_ref: { bg: '#fef3c7', text: '#b45309', border: '#fde68a' },
   employee_ref: { bg: '#ffedd5', text: '#c2410c', border: '#fed7aa' },
+  customer_ref: { bg: '#fce7f3', text: '#be185d', border: '#fbcfe8' },
   manual: { bg: '#f1f5f9', text: '#334155', border: '#e2e8f0' },
 }
 
