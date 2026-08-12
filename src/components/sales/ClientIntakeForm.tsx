@@ -21,7 +21,12 @@ const PANEL_OPTIONS = [{ value: 'adani', label: 'Adani' }, { value: 'waaree', la
 const INVERTER_OPTIONS = [{ value: 'vsole', label: 'VSole' }, { value: 'waaree', label: 'Waaree' }, { value: 'solaredge', label: 'SolarEdge' }, { value: 'other', label: 'Other' }] as const
 const STRUCTURE_OPTIONS = [{ value: 'monorail', label: 'Monorail' }, { value: 'gi', label: 'GI' }, { value: 'hdg', label: 'HDG' }] as const
 const PAYMENT_OPTIONS = [{ value: 'cash', label: 'Cash' }, { value: 'loan', label: 'Loan' }] as const
-const ADVANCE_MODE_OPTIONS = [{ value: 'cash', label: 'Cash' }, { value: 'online', label: 'Online (Prompt Solar account)' }] as const
+const ADVANCE_MODE_OPTIONS = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'online', label: 'Online (Prompt Solar account)' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'none', label: 'None (Not Taken Advance)' },
+] as const
 
 const DOC_FIELDS = [
   ['doc_aadhaar', 'Aadhaar'],
@@ -99,7 +104,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'loan'>('cash')
   const [totalCost, setTotalCost] = useState('')
   const [cashAdvance, setCashAdvance] = useState('')
-  const [advanceMode, setAdvanceMode] = useState<'cash' | 'online' | undefined>()
+  const [advanceMode, setAdvanceMode] = useState<'cash' | 'online' | 'none' | 'cheque' | undefined>()
   const [qrModalVisible, setQrModalVisible] = useState(false)
   const [loanBankName, setLoanBankName] = useState('')
   const [loanAdvance, setLoanAdvance] = useState('')
@@ -395,7 +400,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
             </View>
             <View style={styles.col}>
               <Field label="Advance Received In">
-                <ChipSelect options={ADVANCE_MODE_OPTIONS as any} value={advanceMode} onChange={(v) => setAdvanceMode(v as 'cash' | 'online')} />
+                <ChipSelect options={ADVANCE_MODE_OPTIONS as any} value={advanceMode} onChange={(v) => setAdvanceMode(v as 'cash' | 'online' | 'none' | 'cheque')} />
               </Field>
             </View>
           </View>

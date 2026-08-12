@@ -141,7 +141,7 @@ export interface ClientIntakeForm {
   payment_method: 'cash' | 'loan'
   total_cost: number
   cash_advance: number | null
-  advance_mode: 'cash' | 'online' | null
+  advance_mode: 'cash' | 'online' | 'none' | 'cheque' | null
   cash_remaining_after_install: number | null
   cash_subsidy_after_dispersal: number | null
   loan_bank_name: string | null
