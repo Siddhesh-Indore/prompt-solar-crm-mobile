@@ -204,3 +204,28 @@ export interface FinalizedCustomer {
   imported_by: string | null
   created_at: string
 }
+
+// Clock-in/clock-out time tracking (migration 071) — one row per sales exec
+// per IST calendar day.
+export interface TimeLog {
+  id: string
+  user_id: string
+  log_date: string
+  clock_in_at: string
+  clock_out_at: string | null
+  created_at: string
+}
+
+// Personal reminders (visit/callback) that power the web CRM's notification
+// bell — mirrored here so the mobile app can show the same in-app reminders.
+export interface Reminder {
+  id: string
+  lead_id: string
+  assigned_to: string | null
+  reminder_type: 'callback' | 'visit_reminder' | 'follow_up'
+  due_at: string
+  note: string | null
+  is_sent: boolean
+  is_dismissed: boolean
+  created_at: string
+}

@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router'
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
+import TimeTrackingCard from '@/components/sales/TimeTrackingCard'
+import RemindersCard from '@/components/sales/RemindersCard'
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -43,6 +45,11 @@ export default function HomeScreen() {
         <View style={styles.roleBadge}>
           <Text style={styles.roleBadgeText}>{profile ? (ROLE_LABELS[profile.role] ?? profile.role) : '…'}</Text>
         </View>
+      </View>
+
+      <View style={{ marginTop: 20 }}>
+        <RemindersCard />
+        {role === 'sales_exec' && <TimeTrackingCard />}
       </View>
 
       <View style={styles.quickLinks}>

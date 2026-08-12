@@ -177,6 +177,19 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
         })
       }
 
+      // Reminder goes to the sales exec who'll actually do the visit, not
+      // the telecaller fixing it — same reminders table the callback above
+      // uses, just a different assignee and reminder_type.
+      if (status === 'visit_fixed' && patch.assigned_exec_id && patch.visit_date) {
+        await supabase.from('reminders').insert({
+          lead_id: lead.id,
+          assigned_to: patch.assigned_exec_id,
+          reminder_type: 'visit_reminder',
+          due_at: new Date(`${patch.visit_date}T${patch.visit_time || '09:00'}`).toISOString(),
+          note: `Visit with ${lead.name}`,
+        })
+      }
+
       await releaseLock.mutateAsync({ leadId: lead.id })
       onDone()
     } catch (err) {
