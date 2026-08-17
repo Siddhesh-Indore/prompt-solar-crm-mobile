@@ -9,7 +9,7 @@ import type { Lead, LeadFilters } from '@/types/sales'
 const LIST_COLUMNS = `
   id, name, phone, source, stage, temperature, address, approx_bill_amount, section,
   assigned_caller_id, assigned_exec_id, visit_date, visit_time, created_at,
-  locked_by, locked_at, lock_expires_at,
+  sent_back_to_telecaller, locked_by, locked_at, lock_expires_at,
   assigned_caller:assigned_caller_id(id, full_name),
   assigned_exec:assigned_exec_id(id, full_name),
   locked_by_profile:locked_by(id, full_name)

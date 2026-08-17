@@ -87,7 +87,11 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
   const [visitTime, setVisitTime] = useState('')
   const [callbackDue, setCallbackDue] = useState('')
   const [callbackReason, setCallbackReason] = useState('')
-  const [notes, setNotes] = useState('')
+  // Wasn't seeded from lead.notes before — the field always started blank
+  // even when the lead already had notes from a previous call, and since
+  // submit uses whatever's typed (not an append), that silently overwrote
+  // the prior notes the moment anyone typed something new.
+  const [notes, setNotes] = useState(lead.notes ?? '')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -120,6 +124,9 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       quote_range_max: quoteMax ? Number(quoteMax) : null,
       competitor_contacted: competitorContacted,
       notes: notes || lead.notes,
+      // Submitting qualification is what "reworked" means for the Send
+      // Back tag — clears regardless of which status this submission picks.
+      sent_back_to_telecaller: false,
     }
 
     if (status === 'visit_fixed') {
@@ -207,7 +214,7 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
   function handleRelease() {
     const hasInput = status !== initialStatus || roofType || ownership || propertyType || billAmount
       || quoteMin || quoteMax || competitorContacted || assignedExecId || visitDate || visitTime
-      || callbackDue || callbackReason || notes
+      || callbackDue || callbackReason || notes !== (lead.notes ?? '')
     if (!hasInput) {
       releaseAndExit()
       return

@@ -59,6 +59,10 @@ export interface Lead {
   visit_date: string | null
   visit_time: string | null
   notes: string | null
+  // True from the moment a sales exec sends this lead back to the queue
+  // (ReassignToTelecallerForm) until a telecaller submits qualification on
+  // it again — drives the "Send Back" tag.
+  sent_back_to_telecaller: boolean
   locked_by: string | null
   locked_at: string | null
   lock_expires_at: string | null

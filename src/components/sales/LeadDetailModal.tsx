@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import StageBadge from '@/components/sales/badges/StageBadge'
 import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
+import SendBackBadge from '@/components/sales/badges/SendBackBadge'
 import CallVisitHistory from '@/components/sales/CallVisitHistory'
 import type { Lead } from '@/types/sales'
 
@@ -51,6 +52,7 @@ export default function LeadDetailModal({ lead, onClose }: LeadDetailModalProps)
             <LeadSourceBadge source={lead.source} />
             <StageBadge stage={lead.stage} />
             <TemperatureBadge temperature={lead.temperature} />
+            <SendBackBadge sentBack={lead.sent_back_to_telecaller} />
           </View>
 
           <Section title="Visit">

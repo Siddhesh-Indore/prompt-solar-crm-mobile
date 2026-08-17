@@ -47,7 +47,7 @@ export default function ReassignToTelecallerForm({ lead, onDone, onCancel }: Pro
     }
     setSubmitting(true)
     try {
-      await updateLead.mutateAsync({ id: lead.id, patch: { stage: 'calling', assigned_caller_id: telecallerId } })
+      await updateLead.mutateAsync({ id: lead.id, patch: { stage: 'calling', assigned_caller_id: telecallerId, sent_back_to_telecaller: true } })
       await createFollowUp.mutateAsync({ lead_id: lead.id, due_at: dueAt, reason: note || undefined, assigned_to: telecallerId })
 
       await supabase.from('lead_activities').insert({

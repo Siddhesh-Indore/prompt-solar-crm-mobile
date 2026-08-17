@@ -13,6 +13,7 @@ import { useSalesTeam } from '@/hooks/useSalesTeam'
 import { useAuth } from '@/context/AuthContext'
 import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
+import SendBackBadge from '@/components/sales/badges/SendBackBadge'
 import QualificationForm from '@/components/sales/QualificationForm'
 import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
 import CallVisitHistory from '@/components/sales/CallVisitHistory'
@@ -372,6 +373,7 @@ export default function QueueScreen() {
                 <View style={styles.badgeRow}>
                   <LeadSourceBadge source={lead.source} />
                   <TemperatureBadge temperature={lead.temperature} />
+                  <SendBackBadge sentBack={lead.sent_back_to_telecaller} />
                 </View>
                 <View style={styles.execRow}>
                   <Text style={styles.execLabel}>Sales Exec</Text>
@@ -446,7 +448,7 @@ const styles = StyleSheet.create({
   leadPhone: { fontSize: 13, color: '#6b7280', marginTop: 4 },
   leadAddress: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   lockedText: { fontSize: 11, color: '#b45309', marginTop: 2 },
-  badgeRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   execRow: { marginTop: 10, gap: 6 },
   execLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
   actionsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
