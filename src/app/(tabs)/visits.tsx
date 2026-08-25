@@ -108,12 +108,15 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
 const VISIT_FILTERS_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
 
 export default function VisitsScreen() {
-  const { user } = useAuth()
-  // Scoped to this exec's own visit-stage leads (a naturally small set)
-  // rather than the old useLeads() + client-side filter over every lead in
-  // the table.
+  const { user, profile } = useAuth()
+  // Admin/manager can already fill an intake form for any lead per RLS
+  // (client_intake_forms_insert allows admin/manager/sales_exec) — this
+  // screen used to hard-filter to assignedExecId regardless of role, so
+  // there was nothing to see or tap "Fill Client Intake Form" on even
+  // though the submit itself would have gone through.
+  const seesEveryVisit = profile?.role === 'admin' || profile?.role === 'manager'
   const { data: leads = [], isLoading, refetch, isRefetching } = useLeads(
-    user ? { stageIn: VISIT_FILTERS_STAGES, assignedExecId: user.id } : undefined,
+    user ? { stageIn: VISIT_FILTERS_STAGES, ...(seesEveryVisit ? {} : { assignedExecId: user.id }) } : undefined,
     { enabled: !!user }
   )
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
@@ -126,7 +129,7 @@ export default function VisitsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Visits</Text>
-        <Text style={styles.subtitle}>Leads assigned to you for a site visit</Text>
+        <Text style={styles.subtitle}>{seesEveryVisit ? 'Every lead with a visit fixed or pending intake form' : 'Leads assigned to you for a site visit'}</Text>
       </View>
 
       {isLoading ? (
@@ -142,7 +145,9 @@ export default function VisitsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No visits scheduled</Text>
-              <Text style={styles.emptySubtitle}>Leads assigned to you with a visit fixed will show up here.</Text>
+              <Text style={styles.emptySubtitle}>
+                {seesEveryVisit ? 'Leads with a visit fixed will show up here.' : 'Leads assigned to you with a visit fixed will show up here.'}
+              </Text>
             </View>
           }
           renderItem={({ item }) => <VisitCard lead={item} onDone={refetch} onOpenDetail={() => setDetailLead(item)} />}
