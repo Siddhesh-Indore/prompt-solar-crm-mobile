@@ -8,7 +8,8 @@
     "scheme": "promptsolarcrmmobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "in.promptco.crm"
     },
     "android": {
       "package": "in.promptco.crm",
@@ -53,7 +54,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Prompt Solar CRM uses your camera to take a site photo for a visit."
+          "cameraPermission": "Prompt Solar CRM uses your camera to take a site photo for a visit.",
+          "photosPermission": "Prompt Solar CRM uses your photo library so you can choose an existing site photo instead of the camera."
         }
       ]
     ],

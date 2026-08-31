@@ -1,10 +1,10 @@
 // src/components/sales/IntakePhotoCapture.tsx
-// Mandatory site photos for a converted/won lead — at least 3, camera-only
-// (no gallery picker, same reasoning as LocationPhotoCapture: letting staff
-// pick an old or unrelated photo defeats the point of "proof this was
-// actually installed"). Uploaded individually as they're taken rather than
-// held until submit, so a slow connection doesn't stall the whole form at
-// the end.
+// Mandatory site photos for a converted/won lead — at least 3. Camera stays
+// the primary action (same reasoning as LocationPhotoCapture: an old photo
+// from the gallery undercuts "proof this was actually installed"); gallery
+// is offered as a secondary option for genuine edge cases, not the default.
+// Uploaded individually as they're taken rather than held until submit, so
+// a slow connection doesn't stall the whole form at the end.
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
@@ -28,15 +28,28 @@ interface IntakePhotoCaptureProps {
 export default function IntakePhotoCapture({ execId, leadId, photos, onChange }: IntakePhotoCaptureProps) {
   const [capturing, setCapturing] = useState(false)
 
-  async function addPhoto() {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Camera permission needed', 'Turn on camera access for this app in your phone settings.')
-      return
+  async function addPhoto(source: 'camera' | 'gallery') {
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('Camera permission needed', 'Turn on camera access for this app in your phone settings.')
+        return
+      }
+    } else {
+      // No broad media permission needed on Android (system Photo Picker) —
+      // this request only actually does anything on iOS 10, per
+      // expo-image-picker's own docs.
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('Photo library permission needed', 'Turn on photo access for this app in your phone settings.')
+        return
+      }
     }
     setCapturing(true)
     try {
-      const result = await ImagePicker.launchCameraAsync({ quality: 0.6 })
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ quality: 0.6 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 })
       if (result.canceled || !result.assets[0]) return
 
       const localUri = result.assets[0].uri
@@ -91,8 +104,12 @@ export default function IntakePhotoCapture({ execId, leadId, photos, onChange }:
           </TouchableOpacity>
         ))}
 
-        <TouchableOpacity style={styles.addTile} onPress={addPhoto} disabled={capturing}>
+        <TouchableOpacity style={styles.addTile} onPress={() => addPhoto('camera')} disabled={capturing}>
           {capturing ? <ActivityIndicator size="small" color="#6b7280" /> : <Text style={styles.addTileText}>📷{'\n'}Add Photo</Text>}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.addTile} onPress={() => addPhoto('gallery')} disabled={capturing}>
+          <Text style={styles.addTileText}>🖼{'\n'}Gallery</Text>
         </TouchableOpacity>
       </View>
 

@@ -62,9 +62,11 @@ export default function LocationPhotoCapture({ value, onChange, photoRequired = 
     }
   }
 
-  // Camera only — no gallery picker. Letting staff choose from the library
-  // would let them upload an old or unrelated photo instead of one actually
-  // taken at the site.
+  // Camera stays the primary action — choosing an old photo from the
+  // gallery instead of one taken live at the site would undercut the proof
+  // of visit this exists for. Gallery is offered as a secondary option
+  // below for the genuine edge cases (e.g. a photo taken moments earlier
+  // when the camera flow didn't save cleanly), not as the default path.
   async function takePhoto() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync()
     if (status !== 'granted') {
@@ -72,6 +74,23 @@ export default function LocationPhotoCapture({ value, onChange, photoRequired = 
       return
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.6 })
+    if (!result.canceled && result.assets[0]) {
+      onChange({ ...value, photoUri: result.assets[0].uri })
+    }
+  }
+
+  // Uses the OS-level photo picker (Android's system Photo Picker on API
+  // 33+, the equivalent limited-access picker on iOS) — no broad media
+  // permission needed on Android; requestMediaLibraryPermissionsAsync is a
+  // no-op there and only actually required on iOS 10, per expo-image-picker's
+  // own docs.
+  async function pickFromGallery() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Photo library permission needed', 'Turn on photo access for this app in your phone settings.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 })
     if (!result.canceled && result.assets[0]) {
       onChange({ ...value, photoUri: result.assets[0].uri })
     }
@@ -112,6 +131,10 @@ export default function LocationPhotoCapture({ value, onChange, photoRequired = 
         </Text>
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.galleryLink} onPress={pickFromGallery}>
+        <Text style={styles.galleryLinkText}>Choose from gallery instead</Text>
+      </TouchableOpacity>
+
       {hasPhoto && (
         <Image source={{ uri: value.photoUri! }} style={styles.preview} resizeMode="cover" />
       )}
@@ -132,5 +155,7 @@ const styles = StyleSheet.create({
   buttonDone: { borderColor: '#4ade80', backgroundColor: '#f0fdf4' },
   buttonText: { fontSize: 13, fontWeight: '600', color: '#374151' },
   buttonTextDone: { color: '#047857' },
+  galleryLink: { alignItems: 'center', paddingVertical: 6, marginBottom: 4 },
+  galleryLinkText: { fontSize: 12, color: '#6b7280', textDecorationLine: 'underline' },
   preview: { width: '100%', height: 160, borderRadius: 10, marginTop: 4 },
 })
