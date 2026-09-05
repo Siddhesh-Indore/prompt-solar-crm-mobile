@@ -3,13 +3,17 @@
 // ClientIntakeForm.tsx. Only reachable when the latest visit report's
 // outcome is 'finalized' (enforced by the caller, visits.tsx). Submitting
 // converts the lead (stage -> converted).
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, ActivityIndicator, Alert, Image, Modal, Pressable } from 'react-native'
 import { useCreateClientIntakeForm } from '@/hooks/useClientIntake'
+import { useFirstVisitReportForIntake } from '@/hooks/useVisitReports'
 import { useAuth } from '@/context/AuthContext'
+import { getSignedPhotoUrl } from '@/lib/photoUrl'
+import { copyVisitPhotoToIntake } from '@/lib/copyVisitPhotoToIntake'
 import ChipSelect from '@/components/sales/ChipSelect'
 import DateTimeField from '@/components/sales/DateTimeField'
 import IntakePhotoCapture, { MIN_INTAKE_PHOTOS, type IntakePhoto } from '@/components/sales/IntakePhotoCapture'
+import IntakeLocationCapture, { type IntakeLocationValue } from '@/components/sales/IntakeLocationCapture'
 import {
   CUSTOMER_TYPES, RESIDENTIAL_SUBSIDY_SLABS, HOUSING_SOCIETY_RATE_PER_KW,
   hasGovernmentSubsidy, suggestedSubsidy, remainingAfterAdvance, type CustomerType,
@@ -118,6 +122,37 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
   const [docs, setDocs] = useState<Record<string, boolean>>({})
   const [scope, setScope] = useState<Record<string, boolean>>({})
   const [photos, setPhotos] = useState<IntakePhoto[]>([])
+  const [location, setLocation] = useState<IntakeLocationValue>({ latitude: null, longitude: null, accuracy: null, mapsLink: '' })
+
+  // Location and photo default to whatever the exec already captured on
+  // their first visit to this lead, instead of asking them to recapture —
+  // the exec can still override either through the same buttons.
+  const { data: firstVisit } = useFirstVisitReportForIntake(lead.id, user?.id)
+  const prefilledRef = useRef(false)
+
+  useEffect(() => {
+    if (!firstVisit || prefilledRef.current || !user?.id) return
+    prefilledRef.current = true
+
+    if (firstVisit.latitude != null && firstVisit.longitude != null) {
+      setLocation((prev) => ({ ...prev, latitude: firstVisit.latitude, longitude: firstVisit.longitude, accuracy: firstVisit.location_accuracy }))
+    }
+
+    if (firstVisit.photo_url) {
+      const sourcePath = firstVisit.photo_url
+      ;(async () => {
+        const previewUrl = await getSignedPhotoUrl('visit-photos', sourcePath)
+        if (!previewUrl) return
+        setPhotos((prev) => [...prev, { localUri: previewUrl, path: null, uploading: true }])
+        try {
+          const path = await copyVisitPhotoToIntake(user.id, lead.id, sourcePath, 0)
+          setPhotos((prev) => prev.map((p) => (p.localUri === previewUrl ? { ...p, path, uploading: false } : p)))
+        } catch {
+          setPhotos((prev) => prev.filter((p) => p.localUri !== previewUrl))
+        }
+      })()
+    }
+  }, [firstVisit, user?.id, lead.id])
 
   const [nameChangeRequired, setNameChangeRequired] = useState(false)
   const [namechangeDocs, setNamechangeDocs] = useState<Record<string, boolean>>({})
@@ -210,6 +245,10 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
         scope_concrete_block: !!scope.scope_concrete_block,
         scope_earthing: !!scope.scope_earthing,
         photo_paths: uploadedPhotoPaths,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        location_accuracy: location.accuracy,
+        location_maps_link: location.mapsLink.trim() || null,
         // Guarded here, not just in the UI: a sub-field can only be true when
         // its parent condition is — so an exec who switches on "deceased",
         // then switches off "name change required" entirely, can't submit a
@@ -528,6 +567,8 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
       {user?.id && (
         <IntakePhotoCapture execId={user.id} leadId={lead.id} photos={photos} onChange={setPhotos} />
       )}
+
+      <IntakeLocationCapture value={location} onChange={setLocation} />
 
       <Text style={styles.sectionTitle}>Customer Scope</Text>
       <View style={styles.checkGrid}>

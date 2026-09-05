@@ -3,10 +3,9 @@
 // both, regardless of outcome, so admin can verify how many sites an exec
 // actually visited. Only captures a point-in-time location (no background
 // tracking): one GPS fix taken when this button is pressed.
-import { useState } from 'react'
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert } from 'react-native'
-import * as Location from 'expo-location'
 import * as ImagePicker from 'expo-image-picker'
+import { useCaptureLocation } from '@/hooks/useCaptureLocation'
 
 export interface LocationPhotoValue {
   latitude: number | null
@@ -24,42 +23,11 @@ interface LocationPhotoCaptureProps {
 }
 
 export default function LocationPhotoCapture({ value, onChange, photoRequired = true }: LocationPhotoCaptureProps) {
-  const [locating, setLocating] = useState(false)
+  const { captureLocation: getLocation, locating } = useCaptureLocation()
 
   async function captureLocation() {
-    setLocating(true)
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        Alert.alert(
-          'Location permission needed',
-          'Turn on location access for this app in your phone settings to tag the visit.',
-        )
-        return
-      }
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
-      // Android surfaces Location.isFromMockProvider() here — set when a
-      // fake-GPS app has been enabled as the device's mock location
-      // provider (Developer Options). Refuse the fix outright rather than
-      // silently recording it, so a spoofed visit can't slip through.
-      if (position.mocked) {
-        Alert.alert(
-          'Mock location detected',
-          "This device has a fake GPS / mock location app turned on. Turn it off in Developer Options (or uninstall it) and try again — a visit can't be recorded with a spoofed location.",
-        )
-        return
-      }
-      onChange({
-        ...value,
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-      })
-    } catch (err) {
-      Alert.alert('Could not get location', err instanceof Error ? err.message : 'Try again.')
-    } finally {
-      setLocating(false)
-    }
+    const location = await getLocation()
+    if (location) onChange({ ...value, ...location })
   }
 
   // Camera stays the primary action — choosing an old photo from the

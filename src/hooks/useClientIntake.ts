@@ -1,8 +1,47 @@
 // src/hooks/useClientIntake.ts
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { getSignedPhotoUrl } from '@/lib/photoUrl'
 import type { ClientIntakeForm } from '@/types/sales'
+
+export async function getIntakePhotoUrl(path: string): Promise<string | null> {
+  return getSignedPhotoUrl('intake-photos', path)
+}
+
+export interface ClientIntakeFormWithRelations extends ClientIntakeForm {
+  lead: { id: string; name: string; source: string; section: string | null } | null
+  exec: { id: string; full_name: string } | null
+}
+
+export interface ClientIntakeFormsPageResult {
+  forms: ClientIntakeFormWithRelations[]
+  totalCount: number
+}
+
+// Every intake form ever signed, newest first — mirrors the web CRM's New
+// Finalized Customers tab. client_intake_forms_select (migration 079) opens
+// this to every internal role, not just admin/manager/the signing exec.
+export function useAllClientIntakeForms(search: string | undefined, page: number, pageSize = 20) {
+  return useQuery({
+    queryKey: ['client-intake-forms-page', search ?? '', page, pageSize],
+    queryFn: async (): Promise<ClientIntakeFormsPageResult> => {
+      let query = supabase
+        .from('client_intake_forms')
+        .select('*, lead:lead_id(id, name, source, section), exec:exec_id(id, full_name)', { count: 'exact' })
+        .order('created_at', { ascending: false })
+
+      const term = search?.trim()
+      if (term) query = query.or(`full_name.ilike.%${term}%,phone.ilike.%${term}%,address.ilike.%${term}%`)
+
+      const from = page * pageSize
+      const { data, error, count } = await query.range(from, from + pageSize - 1)
+      if (error) throw error
+      return { forms: (data ?? []) as unknown as ClientIntakeFormWithRelations[], totalCount: count ?? 0 }
+    },
+    placeholderData: keepPreviousData,
+  })
+}
 
 export function useClientIntakeForm(leadId: string | undefined) {
   return useQuery({

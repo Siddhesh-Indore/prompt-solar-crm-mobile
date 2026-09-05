@@ -27,6 +27,48 @@ export function useLatestVisitOutcome(leadId: string | undefined) {
   return reports[0]?.outcome ?? null
 }
 
+/** The source of truth for the client intake form's location + photo:
+ * rather than asking the exec to capture a fresh GPS fix and photo again
+ * at conversion time, reuse whatever they already recorded
+ * on their first visit to this lead — location is mandatory on every visit
+ * (027), so it's always present; the photo is only guaranteed on visit_number
+ * 1 for the lead (061), so it may be null here if this exec's first visit
+ * with this lead wasn't the lead's very first visit overall.
+ *
+ * Falls back to the lead's first visit report regardless of exec when the
+ * person filling the form (e.g. an admin/manager completing it on the
+ * exec's behalf) never logged a visit of their own. */
+export function useFirstVisitReportForIntake(leadId: string | undefined, execId: string | undefined) {
+  return useQuery({
+    queryKey: ['first-visit-report-intake', leadId, execId],
+    queryFn: async (): Promise<VisitReport | null> => {
+      if (!leadId) return null
+      if (execId) {
+        const { data, error } = await supabase
+          .from('visit_reports')
+          .select('*')
+          .eq('lead_id', leadId)
+          .eq('exec_id', execId)
+          .order('visited_at', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        if (error) throw error
+        if (data) return data as unknown as VisitReport
+      }
+      const { data, error } = await supabase
+        .from('visit_reports')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('visited_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (error) throw error
+      return data as unknown as VisitReport | null
+    },
+    enabled: !!leadId,
+  })
+}
+
 export interface NewVisitReportInput {
   lead_id: string
   kw_interest?: number

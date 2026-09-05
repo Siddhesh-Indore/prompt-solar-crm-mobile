@@ -1,16 +1,20 @@
 // src/components/sales/IntakePhotoCapture.tsx
-// Mandatory site photos for a converted/won lead — at least 3. Camera stays
-// the primary action (same reasoning as LocationPhotoCapture: an old photo
-// from the gallery undercuts "proof this was actually installed"); gallery
-// is offered as a secondary option for genuine edge cases, not the default.
-// Uploaded individually as they're taken rather than held until submit, so
-// a slow connection doesn't stall the whole form at the end.
+// Mandatory site photo for a converted/won lead — at least 1. Used to
+// require 3 freshly-taken photos, but the exec's first visit to this lead
+// already captured one (mandatory there — see visit_reports' photo_url) and
+// ClientIntakeForm now auto-copies it in, so re-shooting 3 more here was
+// pure duplicate effort. Camera stays the primary action for anything the
+// exec adds beyond that (same reasoning as LocationPhotoCapture: an old
+// photo from the gallery undercuts "proof this was actually installed");
+// gallery is offered as a secondary option for genuine edge cases, not the
+// default. Uploaded individually as they're taken rather than held until
+// submit, so a slow connection doesn't stall the whole form at the end.
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { uploadIntakePhoto } from '@/lib/uploadIntakePhoto'
 
-export const MIN_INTAKE_PHOTOS = 3
+export const MIN_INTAKE_PHOTOS = 1
 
 export interface IntakePhoto {
   localUri: string

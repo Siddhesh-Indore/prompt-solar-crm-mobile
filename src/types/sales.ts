@@ -164,6 +164,12 @@ export interface ClientIntakeForm {
   scope_concrete_block: boolean
   scope_earthing: boolean
   photo_paths: string[]
+  // Location captured when signing — either a live GPS fix, a pasted
+  // Google Maps link, or both (migration 081). All optional.
+  latitude: number | null
+  longitude: number | null
+  location_accuracy: number | null
+  location_maps_link: string | null
   name_change_required: boolean
   namechange_doc_aadhaar: boolean
   namechange_doc_house_8a: boolean
