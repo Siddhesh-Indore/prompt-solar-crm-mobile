@@ -215,6 +215,21 @@ export interface FinalizedCustomer {
   created_at: string
 }
 
+// The intake buffer before a raw contact becomes a tracked Lead — distinct
+// from FinalizedCustomer above. Mirrors the web CRM's Customer type.
+export interface Customer {
+  id: string
+  name: string
+  phone: string
+  phone_normalized: string
+  address: string | null
+  source: LeadSource | null
+  notes: string | null
+  lead_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
 // Clock-in/clock-out time tracking (migration 071) — one row per sales exec
 // per IST calendar day.
 export interface TimeLog {

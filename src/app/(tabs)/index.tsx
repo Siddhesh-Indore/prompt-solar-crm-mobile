@@ -27,8 +27,11 @@ export default function HomeScreen() {
 
   const role = profile?.role
   const canSeeQueue = role === 'telecaller' || role === 'admin' || role === 'manager'
-  const canSeeVisits = role === 'sales_exec' || role === 'admin' || role === 'manager'
+  const canSeeVisits = role === 'sales_exec' || role === 'admin' || role === 'manager' || role === 'telecaller'
   const canSeeFieldTools = role === 'telecaller' || role === 'sales_exec' || role === 'admin' || role === 'manager'
+  const canSeeLeads = role === 'telecaller' || role === 'sales_exec' || role === 'admin' || role === 'manager'
+  const canSeeCustomers = role === 'telecaller' || role === 'admin'
+  const canSeeEmployeeTimeline = role === 'telecaller' || role === 'admin' || role === 'manager'
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -67,7 +70,34 @@ export default function HomeScreen() {
             <Text style={styles.linkEmoji}>🚗</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.linkTitle}>Visits</Text>
-              <Text style={styles.linkSubtitle}>Your assigned site visits</Text>
+              <Text style={styles.linkSubtitle}>{role === 'telecaller' ? 'Look up a lead’s visit status (view only)' : 'Your assigned site visits'}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {canSeeLeads && (
+          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/leads')}>
+            <Text style={styles.linkEmoji}>📋</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Sales Leads</Text>
+              <Text style={styles.linkSubtitle}>Search and browse every lead, any stage</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {canSeeCustomers && (
+          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/customers')}>
+            <Text style={styles.linkEmoji}>🧑‍🤝‍🧑</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Customers</Text>
+              <Text style={styles.linkSubtitle}>Raw contacts, before they become a lead</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {canSeeEmployeeTimeline && (
+          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/employee-timeline')}>
+            <Text style={styles.linkEmoji}>🗺️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Employee Timeline</Text>
+              <Text style={styles.linkSubtitle}>A sales exec's visits for one day, in order</Text>
             </View>
           </TouchableOpacity>
         )}

@@ -2,7 +2,10 @@
 // Sales exec's visit list — leads at visit_fixed (upcoming) or visited
 // (post-visit, pending intake form). Mirrors the web CRM's VisitsPage. A lead
 // only unlocks the client intake form once its latest visit report outcome
-// is 'finalized'.
+// is 'finalized'. Telecaller also reaches this screen (084) but read-only —
+// they can look up a lead's visit history for coordination, not log or edit
+// one themselves; they don't have visits of their own, so they see every
+// lead with a visit fixed/pending, same scope as admin/manager.
 import { useMemo, useState } from 'react'
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -25,7 +28,7 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => void; onOpenDetail: () => void }) {
+function VisitCard({ lead, onDone, onOpenDetail, canManage }: { lead: Lead; onDone: () => void; onOpenDetail: () => void; canManage: boolean }) {
   const [recording, setRecording] = useState(false)
   const [loggingCall, setLoggingCall] = useState(false)
   const [fillingIntake, setFillingIntake] = useState(false)
@@ -52,38 +55,48 @@ function VisitCard({ lead, onDone, onOpenDetail }: { lead: Lead; onDone: () => v
         </View>
       </TouchableOpacity>
 
-      {(lead.stage === 'visit_fixed' || (lead.stage === 'visited' && outcome !== 'finalized')) && !recording && !loggingCall && (
+      {!canManage ? (
+        intakeForm ? (
+          <Text style={styles.hintDone}>Intake form submitted.</Text>
+        ) : (
+          <Text style={styles.hint}>{outcome === 'finalized' ? 'Awaiting client intake form.' : 'Awaiting the site visit / follow-up.'}</Text>
+        )
+      ) : (
         <>
-          {lead.stage === 'visited' && (
-            <Text style={styles.hint}>Awaiting follow-up — log another visit below if you've been back.</Text>
+          {(lead.stage === 'visit_fixed' || (lead.stage === 'visited' && outcome !== 'finalized')) && !recording && !loggingCall && (
+            <>
+              {lead.stage === 'visited' && (
+                <Text style={styles.hint}>Awaiting follow-up — log another visit below if you've been back.</Text>
+              )}
+              <View style={styles.actionsRow}>
+                <TouchableOpacity style={styles.secondaryBtn} onPress={() => setLoggingCall(true)}>
+                  <Text style={styles.secondaryBtnText}>Log Pre-Visit Call</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.primaryBtn} onPress={() => setRecording(true)}>
+                  <Text style={styles.primaryBtnText}>Record Visit</Text>
+                </TouchableOpacity>
+              </View>
+            </>
           )}
-          <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setLoggingCall(true)}>
-              <Text style={styles.secondaryBtnText}>Log Pre-Visit Call</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => setRecording(true)}>
-              <Text style={styles.primaryBtnText}>Record Visit</Text>
-            </TouchableOpacity>
-          </View>
+
+          {lead.stage === 'visited' && outcome === 'finalized' && !intakeForm && !fillingIntake && (
+            <View style={styles.actionsRow}>
+              <TouchableOpacity style={styles.primaryBtn} onPress={() => setFillingIntake(true)}>
+                <Text style={styles.primaryBtnText}>Fill Client Intake Form</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {intakeForm && <Text style={styles.hintDone}>Intake form submitted.</Text>}
+
+          {!intakeForm && !sendingToTelecaller && (
+            <View style={styles.actionsRow}>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={() => setSendingToTelecaller(true)}>
+                <Text style={styles.secondaryBtnText}>Send to Telecaller</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </>
-      )}
-
-      {lead.stage === 'visited' && outcome === 'finalized' && !intakeForm && !fillingIntake && (
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setFillingIntake(true)}>
-            <Text style={styles.primaryBtnText}>Fill Client Intake Form</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {intakeForm && <Text style={styles.hintDone}>Intake form submitted.</Text>}
-
-      {!intakeForm && !sendingToTelecaller && (
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setSendingToTelecaller(true)}>
-            <Text style={styles.secondaryBtnText}>Send to Telecaller</Text>
-          </TouchableOpacity>
-        </View>
       )}
 
       <FormSheet visible={loggingCall} title="Log Pre-Visit Call" onClose={() => setLoggingCall(false)}>
@@ -114,9 +127,13 @@ export default function VisitsScreen() {
   // screen used to hard-filter to assignedExecId regardless of role, so
   // there was nothing to see or tap "Fill Client Intake Form" on even
   // though the submit itself would have gone through.
+  const isTelecaller = profile?.role === 'telecaller'
   const seesEveryVisit = profile?.role === 'admin' || profile?.role === 'manager'
+  // Telecaller has no visits of their own to filter to — read-only, so they
+  // see every lead with a visit fixed/pending, same scope as admin/manager.
+  const canManage = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'sales_exec'
   const { data: leads = [], isLoading, refetch, isRefetching } = useLeads(
-    user ? { stageIn: VISIT_FILTERS_STAGES, ...(seesEveryVisit ? {} : { assignedExecId: user.id }) } : undefined,
+    user ? { stageIn: VISIT_FILTERS_STAGES, ...(seesEveryVisit || isTelecaller ? {} : { assignedExecId: user.id }) } : undefined,
     { enabled: !!user }
   )
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
@@ -129,7 +146,7 @@ export default function VisitsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Visits</Text>
-        <Text style={styles.subtitle}>{seesEveryVisit ? 'Every lead with a visit fixed or pending intake form' : 'Leads assigned to you for a site visit'}</Text>
+        <Text style={styles.subtitle}>{seesEveryVisit || isTelecaller ? 'Every lead with a visit fixed or pending intake form' : 'Leads assigned to you for a site visit'}</Text>
       </View>
 
       {isLoading ? (
@@ -146,11 +163,11 @@ export default function VisitsScreen() {
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No visits scheduled</Text>
               <Text style={styles.emptySubtitle}>
-                {seesEveryVisit ? 'Leads with a visit fixed will show up here.' : 'Leads assigned to you with a visit fixed will show up here.'}
+                {seesEveryVisit || isTelecaller ? 'Leads with a visit fixed will show up here.' : 'Leads assigned to you with a visit fixed will show up here.'}
               </Text>
             </View>
           }
-          renderItem={({ item }) => <VisitCard lead={item} onDone={refetch} onOpenDetail={() => setDetailLead(item)} />}
+          renderItem={({ item }) => <VisitCard lead={item} onDone={refetch} onOpenDetail={() => setDetailLead(item)} canManage={canManage} />}
         />
       )}
 

@@ -129,6 +129,55 @@ export function useQueuePage(filters: {
   })
 }
 
+export interface LeadsPage {
+  leads: Lead[]
+  totalCount: number
+}
+
+const LEADS_PAGE_SIZE = 50
+
+// Server-side paginated, searchable Sales Leads browser — every stage, not
+// just the calling-queue's 'new'/'calling' subset (see useQueuePage above).
+// RLS (leads_select) still scopes what actually comes back per role: a
+// telecaller sees the unassigned pool plus leads assigned to them, same as
+// the Queue — this just isn't restricted to the "still needs a call" stages,
+// so it doubles as a browsable history of everything they've worked.
+export function useLeadsPage(filters: {
+  search?: string
+  stage?: Lead['stage'] | null
+  section?: string | null
+  temperature?: LeadFilters['temperature'] | null
+}) {
+  return useInfiniteQuery({
+    queryKey: ['leads-page', filters],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<LeadsPage> => {
+      let query = supabase
+        .from('leads')
+        .select(LIST_COLUMNS, { count: 'exact' })
+        .order('created_at', { ascending: false })
+
+      if (filters.stage) query = query.eq('stage', filters.stage)
+      if (filters.section) query = query.eq('section', filters.section)
+      if (filters.temperature) query = query.eq('temperature', filters.temperature)
+      if (filters.search) {
+        const term = filters.search.trim()
+        if (term) query = query.or(`name.ilike.%${term}%,phone.ilike.%${term}%`)
+      }
+
+      const from = pageParam * LEADS_PAGE_SIZE
+      const { data, error, count } = await query.range(from, from + LEADS_PAGE_SIZE - 1)
+      if (error) throw error
+
+      return { leads: (data ?? []) as unknown as Lead[], totalCount: count ?? 0 }
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, p) => sum + p.leads.length, 0)
+      return loaded < lastPage.totalCount ? allPages.length : undefined
+    },
+  })
+}
+
 export function leadsQueryKey(filters?: LeadFilters) {
   return ['leads', filters ?? {}] as const
 }

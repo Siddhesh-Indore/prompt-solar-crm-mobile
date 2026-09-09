@@ -69,6 +69,36 @@ export function useFirstVisitReportForIntake(leadId: string | undefined, execId:
   })
 }
 
+export interface VisitReportWithRelations extends VisitReport {
+  lead: { id: string; name: string; phone: string; address: string | null } | null
+}
+
+/** One exec's visits on one calendar day, chronological — the data behind
+ * Employee Timeline. `date` is a local Y-M-D string; bounded to a single day
+ * so this never needs pagination regardless of how long the table grows.
+ * Telecaller can read any exec's visits here (migration 084) — that's the
+ * point of the feature, checking on a team member's day for coordination. */
+export function useExecDayVisits(execId: string | undefined, date: string) {
+  return useQuery({
+    queryKey: ['visit-reports', 'exec-day', execId, date],
+    queryFn: async (): Promise<VisitReportWithRelations[]> => {
+      if (!execId) return []
+      const dayStart = `${date}T00:00:00`
+      const dayEnd = `${date}T23:59:59.999`
+      const { data, error } = await supabase
+        .from('visit_reports')
+        .select('*, lead:lead_id(id, name, phone, address)')
+        .eq('exec_id', execId)
+        .gte('visited_at', dayStart)
+        .lte('visited_at', dayEnd)
+        .order('visited_at', { ascending: true })
+      if (error) throw error
+      return (data ?? []) as unknown as VisitReportWithRelations[]
+    },
+    enabled: !!execId,
+  })
+}
+
 export interface NewVisitReportInput {
   lead_id: string
   kw_interest?: number
