@@ -1,8 +1,13 @@
 // src/components/sales/TimeTrackingCard.tsx
-// Sales-exec-only clock-in/clock-out card for the Home screen. One session
-// per IST day (migration 071) — once clocked out, that's it until tomorrow.
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
-import { useTodayTimeLog, useClockIn, useClockOut } from '@/hooks/useTimeLogs'
+// Sales-exec-only punch in / punch out attendance card for the Home screen.
+// One session per IST day (migration 071) — once punched out, that's it
+// until tomorrow. Each punch needs a front-camera selfie (migration 087).
+import { useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
+import { useTodayTimeLog, useClockIn, useClockOut, todayInIST } from '@/hooks/useTimeLogs'
+import { useAuth } from '@/context/AuthContext'
+import { uploadPhoto } from '@/lib/uploadPhoto'
 
 function formatTimeIST(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' })
@@ -19,35 +24,75 @@ export default function TimeTrackingCard() {
   const { data: log, isLoading } = useTodayTimeLog()
   const clockIn = useClockIn()
   const clockOut = useClockOut()
+  const { user } = useAuth()
+  const [capturing, setCapturing] = useState(false)
 
-  const busy = clockIn.isPending || clockOut.isPending
+  const busy = capturing || clockIn.isPending || clockOut.isPending
+
+  // Front camera only, no gallery: a selfie picked from old photos would
+  // defeat the point of proving who is punching right now.
+  async function takeSelfie(kind: 'in' | 'out'): Promise<string | null> {
+    if (!user?.id) return null
+    const { status } = await ImagePicker.requestCameraPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Camera permission needed', 'Turn on camera access for this app in your phone settings to punch in or out.')
+      return null
+    }
+    const result = await ImagePicker.launchCameraAsync({ cameraType: ImagePicker.CameraType.front, quality: 0.6 })
+    if (result.canceled || !result.assets[0]) return null
+    return uploadPhoto('attendance-selfies', user.id, todayInIST(), result.assets[0].uri, `-${kind}`)
+  }
+
+  async function punchIn() {
+    setCapturing(true)
+    try {
+      const path = await takeSelfie('in')
+      if (path) clockIn.mutate(path)
+    } catch (err) {
+      Alert.alert('Could not punch in', err instanceof Error ? err.message : 'Try again.')
+    } finally {
+      setCapturing(false)
+    }
+  }
+
+  async function punchOut(logId: string) {
+    setCapturing(true)
+    try {
+      const path = await takeSelfie('out')
+      if (path) clockOut.mutate({ id: logId, selfiePath: path })
+    } catch (err) {
+      Alert.alert('Could not punch out', err instanceof Error ? err.message : 'Try again.')
+    } finally {
+      setCapturing(false)
+    }
+  }
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Time Tracking</Text>
+      <Text style={styles.title}>Attendance</Text>
 
       {isLoading ? (
         <ActivityIndicator size="small" color="#4ade80" style={{ marginTop: 8 }} />
       ) : !log ? (
         <>
-          <Text style={styles.subtitle}>You haven't clocked in today.</Text>
+          <Text style={styles.subtitle}>You haven't punched in today. A selfie is required.</Text>
           <TouchableOpacity
             style={[styles.button, styles.clockInButton, busy && styles.buttonDisabled]}
-            onPress={() => clockIn.mutate()}
+            onPress={punchIn}
             disabled={busy}
           >
-            {clockIn.isPending ? <ActivityIndicator size="small" color="#052e16" /> : <Text style={styles.clockInText}>Clock In</Text>}
+            {busy ? <ActivityIndicator size="small" color="#052e16" /> : <Text style={styles.clockInText}>Punch In</Text>}
           </TouchableOpacity>
         </>
       ) : !log.clock_out_at ? (
         <>
-          <Text style={styles.subtitle}>Clocked in at {formatTimeIST(log.clock_in_at)}</Text>
+          <Text style={styles.subtitle}>Punched in at {formatTimeIST(log.clock_in_at)}</Text>
           <TouchableOpacity
             style={[styles.button, styles.clockOutButton, busy && styles.buttonDisabled]}
-            onPress={() => clockOut.mutate(log.id)}
+            onPress={() => punchOut(log.id)}
             disabled={busy}
           >
-            {clockOut.isPending ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.clockOutText}>Clock Out</Text>}
+            {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.clockOutText}>Punch Out</Text>}
           </TouchableOpacity>
         </>
       ) : (

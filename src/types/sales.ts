@@ -238,6 +238,8 @@ export interface TimeLog {
   log_date: string
   clock_in_at: string
   clock_out_at: string | null
+  clock_in_selfie_path: string | null
+  clock_out_selfie_path: string | null
   created_at: string
 }
 

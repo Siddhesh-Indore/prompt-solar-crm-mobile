@@ -1,6 +1,7 @@
 // src/hooks/useTimeLogs.ts
-// Clock-in/clock-out time tracking for sales execs (migration 071) — one row
-// per exec per IST calendar day, matching the DB's unique(user_id, log_date).
+// Punch in / punch out attendance for sales execs (migration 071, selfies added
+// in 087) — one row per exec per IST calendar day, matching the DB's
+// unique(user_id, log_date). Every punch carries a selfie path.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -37,11 +38,11 @@ export function useClockIn() {
   const { user } = useAuth()
 
   return useMutation({
-    mutationFn: async (): Promise<TimeLog> => {
+    mutationFn: async (selfiePath: string): Promise<TimeLog> => {
       if (!user?.id) throw new Error('Not signed in')
       const { data, error } = await supabase
         .from('time_logs')
-        .insert({ user_id: user.id, log_date: todayInIST(), clock_in_at: new Date().toISOString() })
+        .insert({ user_id: user.id, log_date: todayInIST(), clock_in_at: new Date().toISOString(), clock_in_selfie_path: selfiePath })
         .select()
         .single()
       if (error) throw error
@@ -57,10 +58,10 @@ export function useClockOut() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (id: string): Promise<TimeLog> => {
+    mutationFn: async ({ id, selfiePath }: { id: string; selfiePath: string }): Promise<TimeLog> => {
       const { data, error } = await supabase
         .from('time_logs')
-        .update({ clock_out_at: new Date().toISOString() })
+        .update({ clock_out_at: new Date().toISOString(), clock_out_selfie_path: selfiePath })
         .eq('id', id)
         .select()
         .single()

@@ -7,6 +7,7 @@
 // one themselves; they don't have visits of their own, so they see every
 // lead with a visit fixed/pending, same scope as admin/manager.
 import { useMemo, useState } from 'react'
+import { useRouter } from 'expo-router'
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLeads } from '@/hooks/useLeads'
@@ -122,6 +123,7 @@ const VISIT_FILTERS_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
 
 export default function VisitsScreen() {
   const { user, profile } = useAuth()
+  const router = useRouter()
   // Admin/manager can already fill an intake form for any lead per RLS
   // (client_intake_forms_insert allows admin/manager/sales_exec) — this
   // screen used to hard-filter to assignedExecId regardless of role, so
@@ -144,9 +146,16 @@ export default function VisitsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Visits</Text>
-        <Text style={styles.subtitle}>{seesEveryVisit || isTelecaller ? 'Every lead with a visit fixed or pending intake form' : 'Leads assigned to you for a site visit'}</Text>
+      <View style={[styles.header, styles.headerRow]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Visits</Text>
+          <Text style={styles.subtitle}>{seesEveryVisit || isTelecaller ? 'Every lead with a visit fixed or pending intake form' : 'Leads assigned to you for a site visit'}</Text>
+        </View>
+        {profile?.role === 'sales_exec' && (
+          <TouchableOpacity style={styles.newLeadBtn} onPress={() => router.push('/new-lead')}>
+            <Text style={styles.newLeadBtnText}>+ New Lead</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {isLoading ? (
@@ -180,6 +189,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f9fafb' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  newLeadBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: '#4ade80' },
+  newLeadBtnText: { fontSize: 13, fontWeight: '700', color: '#052e16' },
   title: { fontSize: 20, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   listContent: { padding: 16, gap: 12 },

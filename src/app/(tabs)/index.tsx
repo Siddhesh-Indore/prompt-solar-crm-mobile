@@ -74,6 +74,15 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
         )}
+        {role === 'sales_exec' && (
+          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/new-lead')}>
+            <Text style={styles.linkEmoji}>➕</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>New Lead</Text>
+              <Text style={styles.linkSubtitle}>Add a customer you found in the field</Text>
+            </View>
+          </TouchableOpacity>
+        )}
         {canSeeLeads && (
           <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/leads')}>
             <Text style={styles.linkEmoji}>📋</Text>
