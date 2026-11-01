@@ -146,6 +146,8 @@ export interface ClientIntakeForm {
   total_cost: number
   cash_advance: number | null
   advance_mode: 'cash' | 'online' | 'none' | 'cheque' | null
+  // Required when advance_mode is 'none' (migration 088).
+  advance_note: string | null
   cash_remaining_after_install: number | null
   cash_subsidy_after_dispersal: number | null
   loan_bank_name: string | null

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { getSignedPhotoUrl } from '@/lib/photoUrl'
 import type { ClientIntakeForm } from '@/types/sales'
+import { remainingAfterAdvance } from '@/lib/subsidy'
 
 export async function getIntakePhotoUrl(path: string): Promise<string | null> {
   return getSignedPhotoUrl('intake-photos', path)
@@ -101,6 +102,42 @@ export function useCreateClientIntakeForm() {
       queryClient.invalidateQueries({ queryKey: ['lead-activities', variables.lead_id] })
       queryClient.invalidateQueries({ queryKey: ['lead', variables.lead_id] })
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+    },
+  })
+}
+
+export interface AdvanceReceivedInput {
+  form: Pick<ClientIntakeForm, 'id' | 'lead_id' | 'total_cost' | 'subsidy_amount'>
+  amount: number
+  mode: 'cash' | 'online' | 'cheque'
+}
+
+// Records the advance for a customer who was finalized without paying one
+// ("Customer has not paid advance") — this is what moves them out of the
+// board's Advance Pending column. RLS refuses a disallowed UPDATE by matching
+// zero rows rather than erroring, so it asks for the row back and treats an
+// empty result as a permission failure.
+export function useMarkAdvanceReceived() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ form, amount, mode }: AdvanceReceivedInput): Promise<void> => {
+      const { data, error } = await supabase
+        .from('client_intake_forms')
+        .update({
+          advance_mode: mode,
+          cash_advance: amount,
+          cash_remaining_after_install: remainingAfterAdvance(form.total_cost, amount, form.subsidy_amount ?? 0),
+        })
+        .eq('id', form.id)
+        .select('id')
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error("You don't have permission to update this customer.")
+    },
+    onSuccess: (_data, { form }) => {
+      queryClient.invalidateQueries({ queryKey: ['client-intake-form', form.lead_id] })
+      queryClient.invalidateQueries({ queryKey: ['client-intake-forms-page'] })
+      queryClient.invalidateQueries({ queryKey: ['visit-board'] })
     },
   })
 }

@@ -29,7 +29,7 @@ const ADVANCE_MODE_OPTIONS = [
   { value: 'cash', label: 'Cash' },
   { value: 'online', label: 'Online (Prompt Solar account)' },
   { value: 'cheque', label: 'Cheque' },
-  { value: 'none', label: 'None (Not Taken Advance)' },
+  { value: 'none', label: 'Customer has not paid advance' },
 ] as const
 
 const DOC_FIELDS = [
@@ -109,6 +109,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
   const [totalCost, setTotalCost] = useState('')
   const [cashAdvance, setCashAdvance] = useState('')
   const [advanceMode, setAdvanceMode] = useState<'cash' | 'online' | 'none' | 'cheque' | undefined>()
+  const [advanceNote, setAdvanceNote] = useState('')
   const [qrModalVisible, setQrModalVisible] = useState(false)
   const [loanBankName, setLoanBankName] = useState('')
   const [loanAdvance, setLoanAdvance] = useState('')
@@ -117,7 +118,9 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
 
   // Derived rather than typed so the figures can't disagree — same rule the
   // web form follows for these two.
-  const remainingAfterInstall = remainingAfterAdvance(Number(totalCost) || 0, Number(cashAdvance) || 0, Number(subsidyAmount) || 0)
+  // Not paid means no advance amount to record, so the full balance is due.
+  const advanceNotPaid = paymentMethod === 'cash' && advanceMode === 'none'
+  const remainingAfterInstall = remainingAfterAdvance(Number(totalCost) || 0, advanceNotPaid ? 0 : Number(cashAdvance) || 0, Number(subsidyAmount) || 0)
 
   const [docs, setDocs] = useState<Record<string, boolean>>({})
   const [scope, setScope] = useState<Record<string, boolean>>({})
@@ -198,6 +201,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
     if (!totalCost || Number(totalCost) < 0) return setError('Total cost is required.')
     if (!signedAt) return setError('Signed date is required.')
     if (!customerType) return setError('Customer type is required.')
+    if (advanceNotPaid && !advanceNote.trim()) return setError('Add a note on why the advance has not been paid.')
     const uploadedPhotoPaths = photos.filter((p): p is IntakePhoto & { path: string } => !!p.path && !p.uploading).map((p) => p.path)
     if (uploadedPhotoPaths.length < MIN_INTAKE_PHOTOS) return setError(`At least ${MIN_INTAKE_PHOTOS} site photos are required.`)
     if (photos.some((p) => p.uploading)) return setError('Wait for all photos to finish uploading.')
@@ -225,8 +229,9 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
         structure_height: structureHeight || null,
         payment_method: paymentMethod,
         total_cost: Number(totalCost),
-        cash_advance: paymentMethod === 'cash' && cashAdvance ? Number(cashAdvance) : null,
+        cash_advance: paymentMethod === 'cash' && !advanceNotPaid && cashAdvance ? Number(cashAdvance) : null,
         advance_mode: paymentMethod === 'cash' ? (advanceMode ?? null) : null,
+        advance_note: advanceNotPaid ? advanceNote.trim() : null,
         cash_remaining_after_install: paymentMethod === 'cash' ? remainingAfterInstall : null,
         cash_subsidy_after_dispersal: paymentMethod === 'cash' ? subsidyAmount : null,
         loan_bank_name: loanBankName || null,
@@ -278,7 +283,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
   function handleCancel() {
     const hasInput = fullName !== lead.name || address !== (lead.address ?? '') || phone !== lead.phone
       || email || age || kw || roofType || panelCompany || panelSize || inverter || structure
-      || totalCost || cashAdvance || loanBankName || customerType || nameChangeRequired || photos.length > 0
+      || totalCost || cashAdvance || advanceNote || loanBankName || customerType || nameChangeRequired || photos.length > 0
     if (!hasInput) {
       onCancel?.()
       return
@@ -434,7 +439,14 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
           <View style={styles.row2}>
             <View style={styles.col}>
               <Field label="Advance (₹)">
-                <TextInput style={styles.input} value={cashAdvance} onChangeText={setCashAdvance} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+                <TextInput
+                  style={[styles.input, advanceMode === 'none' && styles.inputDisabled]}
+                  value={advanceMode === 'none' ? '' : cashAdvance}
+                  onChangeText={setCashAdvance}
+                  editable={advanceMode !== 'none'}
+                  keyboardType="numeric"
+                  placeholderTextColor="#9ca3af"
+                />
               </Field>
             </View>
             <View style={styles.col}>
@@ -443,6 +455,20 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
               </Field>
             </View>
           </View>
+
+          {advanceMode === 'none' && (
+            <Field label="Note *">
+              <TextInput
+                style={[styles.input, { height: 80 }]}
+                value={advanceNote}
+                onChangeText={setAdvanceNote}
+                placeholder="Why hasn't the customer paid the advance, and when do they expect to?"
+                placeholderTextColor="#9ca3af"
+                multiline
+                textAlignVertical="top"
+              />
+            </Field>
+          )}
 
           {advanceMode === 'online' && (
             <View style={styles.qrCard}>
@@ -611,6 +637,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 14 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
   input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  inputDisabled: { backgroundColor: '#f9fafb', color: '#9ca3af' },
   readOnlyInput: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, backgroundColor: '#f9fafb' },
   readOnlyInputText: { fontSize: 14, color: '#374151', fontWeight: '600' },
   caption: { fontSize: 11, color: '#9ca3af', marginTop: 5 },

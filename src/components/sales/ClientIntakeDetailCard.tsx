@@ -152,6 +152,7 @@ export default function ClientIntakeDetailCard({ f }: { f: ClientIntakeFormWithR
           />
           <Field label="Payment Method" value={f.payment_method === 'cash' ? 'Cash' : 'Loan'} />
           <Field label="Advance Received In" value={ADVANCE_MODE_LABEL[f.advance_mode ?? ''] ?? null} />
+          {f.advance_mode === 'none' && <Field label="Advance Note" value={f.advance_note} />}
           <Field label="Total Cost" value={formatCurrency(f.total_cost)} />
           {f.payment_method === 'cash' ? (
             <>

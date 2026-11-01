@@ -11,7 +11,7 @@ export const CUSTOMER_TYPE_LABEL: Record<string, string> = {
   residential: 'Residential', commercial: 'Commercial', housing_society: 'Housing Society',
 }
 export const ADVANCE_MODE_LABEL: Record<string, string> = {
-  cash: 'Cash', online: 'Online (Prompt Solar account)', cheque: 'Cheque', none: 'None (Not Taken Advance)',
+  cash: 'Cash', online: 'Online (Prompt Solar account)', cheque: 'Cheque', none: 'Customer has not paid advance',
 }
 
 /** Boolean document checkboxes, in the order the paper form collects them. */
