@@ -3,7 +3,7 @@
 // both, regardless of outcome, so admin can verify how many sites an exec
 // actually visited. Only captures a point-in-time location (no background
 // tracking): one GPS fix taken when this button is pressed.
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { useCaptureLocation } from '@/hooks/useCaptureLocation'
 
@@ -53,10 +53,12 @@ export default function LocationPhotoCapture({ value, onChange, photoRequired = 
   // no-op there and only actually required on iOS 10, per expo-image-picker's
   // own docs.
   async function pickFromGallery() {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Photo library permission needed', 'Turn on photo access for this app in your phone settings.')
-      return
+    if (Platform.OS === 'ios') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (status !== 'granted') {
+        Alert.alert('Photo library permission needed', 'Turn on photo access for this app in your phone settings.')
+        return
+      }
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 })
     if (!result.canceled && result.assets[0]) {

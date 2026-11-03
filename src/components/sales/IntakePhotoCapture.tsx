@@ -10,7 +10,7 @@
 // default. Uploaded individually as they're taken rather than held until
 // submit, so a slow connection doesn't stall the whole form at the end.
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { uploadIntakePhoto } from '@/lib/uploadIntakePhoto'
 
@@ -39,7 +39,7 @@ export default function IntakePhotoCapture({ execId, leadId, photos, onChange }:
         Alert.alert('Camera permission needed', 'Turn on camera access for this app in your phone settings.')
         return
       }
-    } else {
+    } else if (Platform.OS === 'ios') {
       // No broad media permission needed on Android (system Photo Picker) —
       // this request only actually does anything on iOS 10, per
       // expo-image-picker's own docs.
