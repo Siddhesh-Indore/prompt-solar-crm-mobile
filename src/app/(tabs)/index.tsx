@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
 import TimeTrackingCard from '@/components/sales/TimeTrackingCard'
@@ -29,12 +29,12 @@ export default function HomeScreen() {
   const canSeeQueue = role === 'telecaller' || role === 'admin' || role === 'manager'
   const canSeeVisits = role === 'sales_exec' || role === 'admin' || role === 'manager' || role === 'telecaller'
   const canSeeFieldTools = role === 'telecaller' || role === 'sales_exec' || role === 'admin' || role === 'manager'
-  const canSeeLeads = role === 'telecaller' || role === 'sales_exec' || role === 'admin' || role === 'manager'
   const canSeeCustomers = role === 'telecaller' || role === 'admin'
   const canSeeEmployeeTimeline = role === 'telecaller' || role === 'admin' || role === 'manager'
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Prompt Solar CRM</Text>
         <TouchableOpacity onPress={signOut}>
@@ -83,15 +83,6 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
         )}
-        {canSeeLeads && (
-          <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/leads')}>
-            <Text style={styles.linkEmoji}>📋</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.linkTitle}>Sales Leads</Text>
-              <Text style={styles.linkSubtitle}>Search and browse every lead, any stage</Text>
-            </View>
-          </TouchableOpacity>
-        )}
         {canSeeCustomers && (
           <TouchableOpacity style={styles.linkCard} onPress={() => router.push('/customers')}>
             <Text style={styles.linkEmoji}>🧑‍🤝‍🧑</Text>
@@ -129,12 +120,16 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f9fafb', padding: 20 },
+  safeArea: { flex: 1, backgroundColor: '#f9fafb' },
+  // Padding lives on the scroll content, not the screen, so the last card
+  // can scroll clear of the tab bar instead of being clipped.
+  scrollContent: { padding: 20, paddingBottom: 40 },
   center: { flex: 1, backgroundColor: '#f9fafb', alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 20, fontWeight: '700', color: '#111827' },
