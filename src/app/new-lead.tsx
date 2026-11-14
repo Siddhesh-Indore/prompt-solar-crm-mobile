@@ -1,7 +1,8 @@
 // src/app/new-lead.tsx
-// New Lead — mirrors the web CRM's NewLeadPage: just the basics (name,
-// phone, address, source); the telecaller fills in the rest during the
-// qualification call. Blocks on a duplicate phone number, checked
+// New Lead for a sales exec in the field: just the basics (name, phone,
+// address, source). The lead lands on the exec's own Visits board as a first
+// visit (see useCreateLead), not in the telecaller queue. Blocks on a
+// duplicate phone number, checked
 // org-wide (find_leads_by_phone, migration 086) rather than only against
 // leads this user can see.
 import { useState } from 'react'
@@ -14,9 +15,7 @@ import ChipSelect from '@/components/sales/ChipSelect'
 import StageBadge from '@/components/sales/badges/StageBadge'
 import type { LeadSource } from '@/types/sales'
 
-// Matches what customers.source's CHECK constraint accepts — the lead's
-// source is copied onto its customer record, so a value outside this set
-// would fail that step after the lead itself was already created.
+// Sources an exec can plausibly tag a lead they found themselves with.
 const SOURCE_OPTIONS: { value: LeadSource; label: string }[] = [
   { value: 'manual', label: 'Manual' },
   { value: 'cold_call', label: 'Cold Call' },
@@ -79,7 +78,7 @@ export default function NewLeadScreen() {
         source,
         notes: notes.trim() || undefined,
       })
-      Alert.alert('Lead created', `${name.trim()} was added and is now in the telecaller queue.`, [
+      Alert.alert('Lead created', `${name.trim()} was added to your Visits as a first visit.`, [
         { text: 'OK', onPress: () => router.back() },
       ])
     } catch (err) {
@@ -95,7 +94,7 @@ export default function NewLeadScreen() {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <BackButton onPress={() => router.back()} />
           <Text style={styles.title}>New Lead</Text>
-          <Text style={styles.subtitle}>Capture the basics — the telecaller fills in the rest after the qualification call.</Text>
+          <Text style={styles.subtitle}>Capture the basics — it goes straight to your Visits, ready for the first visit.</Text>
 
           {error && <Text style={styles.error}>{error}</Text>}
 

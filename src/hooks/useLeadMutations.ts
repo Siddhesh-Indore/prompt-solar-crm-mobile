@@ -33,20 +33,30 @@ export async function findDuplicateLeadsByPhone(phone: string): Promise<Duplicat
   return (data ?? []) as unknown as DuplicateLead[]
 }
 
+// Local Y-M-D — the visit_date column is a plain date, so toISOString()
+// (UTC) would put an evening lead on tomorrow's board in India.
+function localDateString(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 export function useCreateLead() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
 
   return useMutation({
     mutationFn: async (input: NewLeadInput): Promise<Lead> => {
-      // A sales exec can only read leads assigned to them (leads_select), so
-      // the lead has to be assigned to its creator or the insert's own
-      // RETURNING would be rejected by RLS. It still lands in the
-      // telecaller's unassigned pool (assigned_caller_id stays null) for
-      // qualification, same as any other new lead.
+      // A lead a sales exec finds in the field goes straight onto their own
+      // Visits board (visit_fixed, assigned to them, due today) instead of
+      // the telecaller queue — they're the one visiting. Being assigned is
+      // also what lets them read the row back (leads_select), and the
+      // visit_fixed stage requires an assigned exec anyway. It still shows
+      // up in Sales Leads on the web like any lead. Deliberately no
+      // upsert_customer_for_lead here: that put field leads into Customers,
+      // which is the raw-contact buffer before a lead exists.
       const { data, error } = await supabase
         .from('leads')
-        .insert({ ...input, stage: 'new', assigned_exec_id: user?.id ?? null })
+        .insert({ ...input, stage: 'visit_fixed', assigned_exec_id: user?.id ?? null, visit_date: localDateString(new Date()) })
         .select()
         .single()
       if (error) throw error
@@ -57,19 +67,7 @@ export function useCreateLead() {
         lead_id: lead.id,
         actor_id: user?.id ?? null,
         action_type: 'lead_created',
-        new_value: { source: input.source },
-      })
-
-      // Keep the customer directory complete — same bookkeeping the web
-      // CRM does on every lead creation (SECURITY DEFINER RPC, so it works
-      // for roles that can't touch the customers table directly).
-      await supabase.rpc('upsert_customer_for_lead', {
-        p_name: input.name,
-        p_phone: input.phone,
-        p_address: input.address ?? null,
-        p_source: input.source,
-        p_notes: input.notes ?? null,
-        p_lead_id: lead.id,
+        new_value: { source: input.source, stage: 'visit_fixed' },
       })
 
       return lead
@@ -78,7 +76,7 @@ export function useCreateLead() {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
       queryClient.invalidateQueries({ queryKey: ['leads-page'] })
       queryClient.invalidateQueries({ queryKey: ['queue-page'] })
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['visit-board'] })
     },
   })
 }
