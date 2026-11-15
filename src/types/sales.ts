@@ -148,6 +148,8 @@ export interface ClientIntakeForm {
   advance_mode: 'cash' | 'online' | 'none' | 'cheque' | null
   // Required when advance_mode is 'none' (migration 088).
   advance_note: string | null
+  // Set when moved to the Reference List (migration 089).
+  moved_to_reference_at: string | null
   cash_remaining_after_install: number | null
   cash_subsidy_after_dispersal: number | null
   loan_bank_name: string | null

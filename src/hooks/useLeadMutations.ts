@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { localDateKey } from '@/lib/visitBoard'
 import type { Lead, LeadSource } from '@/types/sales'
 
 export interface NewLeadInput {
@@ -33,13 +34,6 @@ export async function findDuplicateLeadsByPhone(phone: string): Promise<Duplicat
   return (data ?? []) as unknown as DuplicateLead[]
 }
 
-// Local Y-M-D — the visit_date column is a plain date, so toISOString()
-// (UTC) would put an evening lead on tomorrow's board in India.
-function localDateString(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
 export function useCreateLead() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
@@ -56,7 +50,7 @@ export function useCreateLead() {
       // which is the raw-contact buffer before a lead exists.
       const { data, error } = await supabase
         .from('leads')
-        .insert({ ...input, stage: 'visit_fixed', assigned_exec_id: user?.id ?? null, visit_date: localDateString(new Date()) })
+        .insert({ ...input, stage: 'visit_fixed', assigned_exec_id: user?.id ?? null, visit_date: localDateKey() })
         .select()
         .single()
       if (error) throw error

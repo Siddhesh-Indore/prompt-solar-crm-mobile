@@ -17,12 +17,15 @@ export interface LocationPhotoValue {
 interface LocationPhotoCaptureProps {
   value: LocationPhotoValue
   onChange: (value: LocationPhotoValue) => void
-  /** Defaults to true — pass false once the site's already been photographed
-   * on an earlier visit for this lead (see PostVisitForm). */
+  /** Defaults to true. Pass false to make the photo optional. */
   photoRequired?: boolean
+  /** Defaults to true. Pass false to hide the GPS step when the site's
+   * location was already captured on this lead's first visit and is being
+   * carried over (see PostVisitForm). */
+  locationRequired?: boolean
 }
 
-export default function LocationPhotoCapture({ value, onChange, photoRequired = true }: LocationPhotoCaptureProps) {
+export default function LocationPhotoCapture({ value, onChange, photoRequired = true, locationRequired = true }: LocationPhotoCaptureProps) {
   const { captureLocation: getLocation, locating } = useCaptureLocation()
 
   async function captureLocation() {
@@ -72,28 +75,32 @@ export default function LocationPhotoCapture({ value, onChange, photoRequired = 
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>
-        Site Location {photoRequired && '& Photo'} <Text style={styles.required}>*</Text>
-        {!photoRequired && <Text style={styles.optionalNote}> (photo optional — already captured earlier)</Text>}
+        {locationRequired ? `Site Location${photoRequired ? ' & Photo' : ''}` : 'Site Photo'} <Text style={styles.required}>*</Text>
+        {!photoRequired && <Text style={styles.optionalNote}> (photo optional)</Text>}
       </Text>
       <Text style={styles.hint}>
-        {photoRequired ? 'Both required for every visit, even if not finalized.' : 'Location is still required; retake the photo only if you want to update it.'}
+        {!locationRequired
+          ? 'Location is carried over from the first visit — just add a photo of the site today.'
+          : photoRequired ? 'Both required for every visit, even if not finalized.' : 'Location is required; the photo is optional.'}
       </Text>
 
-      <TouchableOpacity
-        style={[styles.button, hasLocation && styles.buttonDone]}
-        onPress={captureLocation}
-        disabled={locating}
-      >
-        {locating ? (
-          <ActivityIndicator size="small" color="#6b7280" />
-        ) : (
-          <Text style={[styles.buttonText, hasLocation && styles.buttonTextDone]}>
-            {hasLocation
-              ? `📍 Location captured (±${value.accuracy ? Math.round(value.accuracy) : '?'}m)`
-              : '📍 Capture Location'}
-          </Text>
-        )}
-      </TouchableOpacity>
+      {locationRequired && (
+        <TouchableOpacity
+          style={[styles.button, hasLocation && styles.buttonDone]}
+          onPress={captureLocation}
+          disabled={locating}
+        >
+          {locating ? (
+            <ActivityIndicator size="small" color="#6b7280" />
+          ) : (
+            <Text style={[styles.buttonText, hasLocation && styles.buttonTextDone]}>
+              {hasLocation
+                ? `📍 Location captured (±${value.accuracy ? Math.round(value.accuracy) : '?'}m)`
+                : '📍 Capture Location'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={[styles.button, hasPhoto && styles.buttonDone]} onPress={takePhoto}>
         <Text style={[styles.buttonText, hasPhoto && styles.buttonTextDone]}>

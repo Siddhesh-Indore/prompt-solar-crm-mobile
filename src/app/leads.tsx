@@ -79,8 +79,8 @@ export default function LeadsScreen() {
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
           onEndReachedThreshold={0.5}
           refreshing={isRefetching}
-          onRefresh={refetch}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator size="small" color="#4ade80" style={{ marginVertical: 16 }} /> : null}
+          onRefresh={() => { refetch() }}
+          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator size="small" color="#4ade80" style={{ marginVertical: 16 }} /> : undefined}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No leads found</Text>

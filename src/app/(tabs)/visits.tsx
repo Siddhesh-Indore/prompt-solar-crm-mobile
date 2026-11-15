@@ -82,7 +82,7 @@ export default function VisitsScreen() {
           data={myVisits}
           keyExtractor={(l) => l.id}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch() }} />}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No visits scheduled</Text>

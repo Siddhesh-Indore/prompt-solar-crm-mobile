@@ -36,7 +36,7 @@ export default function ExecAssignPicker({ value, onChange, required }: Props) {
               data={execs}
               keyExtractor={(e) => e.id}
               ListHeaderComponent={
-                required ? null : (
+                required ? undefined : (
                   <TouchableOpacity
                     style={styles.row}
                     onPress={() => { onChange(null); setOpen(false) }}

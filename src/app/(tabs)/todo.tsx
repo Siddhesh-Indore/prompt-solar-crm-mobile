@@ -4,7 +4,9 @@
 //   - pending follow_ups assigned to them (one slot per lead, DB-enforced)
 //   - their own leads at stage 'visit_fixed' (a scheduled site visit)
 // Split into Overdue / Today / Upcoming by comparing each item's date
-// against today's date in the device's local timezone.
+// against today's date in the device's local timezone. Visits are the same
+// cards as on the Visits tab, so a visit can be called, recorded or sent back
+// from here.
 import { useMemo, useState } from 'react'
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -12,6 +14,8 @@ import { useLeads } from '@/hooks/useLeads'
 import { useAuth } from '@/context/AuthContext'
 import { useMyFollowUps, useCompleteFollowUp } from '@/hooks/useFollowUps'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
+import SharedVisitCard from '@/components/sales/VisitCard'
+import { localDateKey, daysUntil } from '@/lib/visitBoard'
 import FollowUpSetter from '@/components/sales/FollowUpSetter'
 import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
@@ -21,11 +25,13 @@ type TodoItem =
   | { kind: 'follow_up'; sortKey: string; id: string; leadId: string; leadName: string; leadPhone: string; dueAt: string; reason: string | null }
 
 function todayKey(): string {
-  return new Date().toISOString().slice(0, 10)
+  return localDateKey()
 }
 
+// A follow-up's due_at is a timestamp — take its date in local time, not
+// UTC, so one due at 1am IST doesn't count as yesterday's.
 function dateKeyOf(iso: string): string {
-  return iso.slice(0, 10)
+  return localDateKey(new Date(iso))
 }
 
 function bucketOf(dateKey: string): 'overdue' | 'today' | 'upcoming' {
@@ -33,6 +39,33 @@ function bucketOf(dateKey: string): 'overdue' | 'today' | 'upcoming' {
   if (dateKey < today) return 'overdue'
   if (dateKey === today) return 'today'
   return 'upcoming'
+}
+
+type RangeFilter = 'today' | 'week' | 'all'
+
+const RANGE_OPTIONS: { value: RangeFilter; label: string }[] = [
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'This Week' },
+  { value: 'all', label: 'All' },
+]
+
+// Last day of the current calendar week (Sunday), local time.
+function endOfWeekKey(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + ((7 - d.getDay()) % 7))
+  return localDateKey(d)
+}
+
+// Overdue always shows — a missed visit is the thing most worth seeing.
+function inRange(dateKey: string, range: RangeFilter): boolean {
+  if (range === 'all') return true
+  if (dateKey <= todayKey()) return true
+  return range === 'week' && dateKey <= endOfWeekKey()
+}
+
+function dayTitle(dateKey: string): string {
+  const diff = daysUntil(dateKey)
+  return diff === 1 ? `Tomorrow · ${formatDate(dateKey)}` : formatDate(dateKey)
 }
 
 function formatDate(dateKey: string): string {
@@ -109,24 +142,6 @@ function FollowUpCard({ item, onDone }: { item: Extract<TodoItem, { kind: 'follo
   )
 }
 
-function VisitCard({ lead, onOpenDetail }: { lead: Lead; onOpenDetail: () => void }) {
-  return (
-    <TouchableOpacity style={styles.card} onPress={onOpenDetail} activeOpacity={0.7}>
-      <View style={styles.kindRow}>
-        <Text style={styles.kindTag}>🚗 Site Visit</Text>
-      </View>
-      <Text style={styles.leadName}>{lead.name}</Text>
-      <Text style={styles.leadPhone}>📞 {lead.phone}</Text>
-      {lead.address && <Text style={styles.leadPhone}>📍 {lead.address}</Text>}
-      {lead.visit_date && (
-        <Text style={styles.dueText}>
-          {formatDate(lead.visit_date)} {lead.visit_time ?? ''}
-        </Text>
-      )}
-    </TouchableOpacity>
-  )
-}
-
 export default function TodoScreen() {
   const { user, profile } = useAuth()
   const showsVisits = profile?.role === 'sales_exec' || profile?.role === 'admin' || profile?.role === 'manager'
@@ -139,11 +154,12 @@ export default function TodoScreen() {
   )
   const { data: followUps = [], isLoading: followUpsLoading, refetch: refetchFollowUps, isRefetching: followUpsRefetching } = useMyFollowUps()
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
+  const [range, setRange] = useState<RangeFilter>('today')
 
   const items = useMemo(() => {
     const visitItems: TodoItem[] = leads
       .filter((l) => l.visit_date)
-      .map((lead) => ({ kind: 'visit' as const, sortKey: lead.visit_date!, lead }))
+      .map((lead) => ({ kind: 'visit' as const, sortKey: `${lead.visit_date!.slice(0, 10)} ${lead.visit_time ?? '00:00'}`, lead }))
 
     const followUpItems: TodoItem[] = followUps
       .filter((f): f is typeof f & { lead: NonNullable<typeof f.lead> } => !!f.lead)
@@ -161,9 +177,18 @@ export default function TodoScreen() {
     return [...visitItems, ...followUpItems].sort((a, b) => a.sortKey.localeCompare(b.sortKey))
   }, [leads, followUps])
 
-  const overdue = items.filter((i) => bucketOf(i.sortKey) === 'overdue')
-  const today = items.filter((i) => bucketOf(i.sortKey) === 'today')
-  const upcoming = items.filter((i) => bucketOf(i.sortKey) === 'upcoming')
+  const visible = useMemo(() => items.filter((i) => inRange(i.sortKey.slice(0, 10), range)), [items, range])
+  const overdue = visible.filter((i) => bucketOf(i.sortKey.slice(0, 10)) === 'overdue')
+  const today = visible.filter((i) => bucketOf(i.sortKey.slice(0, 10)) === 'today')
+  const upcoming = visible.filter((i) => bucketOf(i.sortKey.slice(0, 10)) === 'upcoming')
+
+  // Counts on the chips are for the whole list, so each one shows what
+  // switching to it would reveal.
+  const rangeCounts: Record<RangeFilter, number> = {
+    today: items.filter((i) => inRange(i.sortKey.slice(0, 10), 'today')).length,
+    week: items.filter((i) => inRange(i.sortKey.slice(0, 10), 'week')).length,
+    all: items.length,
+  }
 
   const isLoading = leadsLoading || followUpsLoading
   const isRefetching = leadsRefetching || followUpsRefetching
@@ -173,10 +198,17 @@ export default function TodoScreen() {
     refetchFollowUps()
   }
 
+  // Upcoming is split per day so a week reads as a schedule.
+  const upcomingByDay = new Map<string, TodoItem[]>()
+  for (const item of upcoming) {
+    const key = item.sortKey.slice(0, 10)
+    upcomingByDay.set(key, [...(upcomingByDay.get(key) ?? []), item])
+  }
+
   const sections: { title: string; data: TodoItem[] }[] = [
     { title: `Today (${today.length})`, data: today },
     { title: `Overdue (${overdue.length})`, data: overdue },
-    { title: `Upcoming (${upcoming.length})`, data: upcoming },
+    ...[...upcomingByDay.entries()].map(([key, data]) => ({ title: `${dayTitle(key)} (${data.length})`, data })),
   ].filter((s) => s.data.length > 0)
 
   return (
@@ -184,6 +216,17 @@ export default function TodoScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>To-Do</Text>
         <Text style={styles.subtitle}>{showsVisits ? 'Your visits and follow-ups' : 'Your follow-ups'}</Text>
+      </View>
+
+      <View style={styles.rangeRow}>
+        {RANGE_OPTIONS.map((o) => {
+          const active = o.value === range
+          return (
+            <TouchableOpacity key={o.value} style={[styles.rangeChip, active && styles.rangeChipActive]} onPress={() => setRange(o.value)}>
+              <Text style={[styles.rangeChipText, active && styles.rangeChipTextActive]}>{o.label} · {rangeCounts[o.value]}</Text>
+            </TouchableOpacity>
+          )
+        })}
       </View>
 
       {isLoading ? (
@@ -195,12 +238,14 @@ export default function TodoScreen() {
           data={sections}
           keyExtractor={(s) => s.title}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchAll} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetchAll() }} />}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>Nothing on your list</Text>
+              <Text style={styles.emptyTitle}>{range === 'today' ? 'Nothing due today' : range === 'week' ? 'Nothing due this week' : 'Nothing on your list'}</Text>
               <Text style={styles.emptySubtitle}>
-                {showsVisits ? 'Visits and follow-ups assigned to you will show up here.' : 'Follow-ups assigned to you will show up here.'}
+                {range === 'all'
+                  ? (showsVisits ? 'Visits and follow-ups assigned to you will show up here.' : 'Follow-ups assigned to you will show up here.')
+                  : 'Switch the filter above to see what\'s coming up.'}
               </Text>
             </View>
           }
@@ -209,7 +254,7 @@ export default function TodoScreen() {
               <Text style={styles.sectionTitle}>{section.title}</Text>
               {section.data.map((item) =>
                 item.kind === 'visit' ? (
-                  <VisitCard key={`visit-${item.lead.id}`} lead={item.lead} onOpenDetail={() => setDetailLead(item.lead)} />
+                  <SharedVisitCard key={`visit-${item.lead.id}`} lead={item.lead} onDone={refetchAll} onOpenDetail={() => setDetailLead(item.lead)} canManage />
                 ) : (
                   <FollowUpCard key={`fu-${item.id}`} item={item} onDone={refetchAll} />
                 ),
@@ -230,6 +275,11 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   title: { fontSize: 20, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  rangeRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 6 },
+  rangeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
+  rangeChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
+  rangeChipText: { fontSize: 13, fontWeight: '500', color: '#374151' },
+  rangeChipTextActive: { color: '#052e16', fontWeight: '700' },
   listContent: { padding: 16, gap: 4 },
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },

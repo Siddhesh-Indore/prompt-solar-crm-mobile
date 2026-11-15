@@ -147,6 +147,7 @@ export function useCreateVisitReport() {
       queryClient.invalidateQueries({ queryKey: ['lead-activities', variables.lead_id] })
       queryClient.invalidateQueries({ queryKey: ['lead', variables.lead_id] })
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['visit-board'] })
     },
   })
 }

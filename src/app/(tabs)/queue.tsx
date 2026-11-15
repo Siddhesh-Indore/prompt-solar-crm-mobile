@@ -328,7 +328,7 @@ export default function QueueScreen() {
           data={queue}
           keyExtractor={(l) => l.id}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch() }} />}
           onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
@@ -336,7 +336,7 @@ export default function QueueScreen() {
               <View style={styles.loadingMore}>
                 <ActivityIndicator size="small" color="#4ade80" />
               </View>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={styles.empty}>

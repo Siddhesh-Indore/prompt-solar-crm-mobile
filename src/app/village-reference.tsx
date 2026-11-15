@@ -165,7 +165,7 @@ export default function VillageReferenceScreen() {
                       <Text style={styles.pagerBtnText}>Next</Text>
                     </TouchableOpacity>
                   </View>
-                ) : null
+                ) : undefined
               }
             />
           )}

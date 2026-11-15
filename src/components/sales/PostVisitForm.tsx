@@ -1,13 +1,15 @@
 // src/components/sales/PostVisitForm.tsx
 // Records a completed visit and branches the lead's stage per outcome:
 //   finalized     -> stage=visited (client intake form becomes fillable — web-only for now)
-//   second_visit  -> stage=visit_fixed with a new visit date (loops back)
+//   second_visit  -> stage=visit_fixed with a new visit date (loops back);
+//                    only offered on the first visit — once a customer is in
+//                    Follow-up the choices are Follow-up / Lost / Finalized
 //   follow_up     -> a next visit date is optional here too: if given, this
 //                    behaves like second_visit (the next visit IS the plan);
 //                    left blank, stage=visited and FollowUpSetter opens for
 //                    a callback reminder instead
 //   lost          -> stage=lost (terminal)
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { useAuth } from '@/context/AuthContext'
 import { useCreateVisitReport, useVisitReports, type NewVisitReportInput } from '@/hooks/useVisitReports'
@@ -26,6 +28,10 @@ const OUTCOME_OPTIONS: { value: NonNullable<NewVisitReportInput['outcome']>; lab
   { value: 'lost', label: 'Lost' },
 ]
 
+// A customer already in Follow-up (visited at least once) has run out of
+// "second visit" — it's either still a follow-up, finalized, or lost.
+const FOLLOW_UP_STAGE_OUTCOMES = OUTCOME_OPTIONS.filter((o) => o.value !== 'second_visit')
+
 interface PostVisitFormProps {
   lead: Lead
   onDone: () => void
@@ -36,11 +42,19 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
   const { user } = useAuth()
   const createVisitReport = useCreateVisitReport()
   const updateLead = useUpdateLead()
-  // Photo's only mandatory the first time — by the second trip back to the
-  // same site there's nothing new to prove with another photo, and it was
-  // blocking execs from logging the outcome (migration 061).
+  // Every visit needs a site photo. The first visit also captures the GPS
+  // location; follow-ups reuse it rather than asking for a fresh fix — the
+  // site is the same, and the DB still wants a location on every visit
+  // report (migration 027), so it's copied from the first one.
   const { data: existingVisits = [] } = useVisitReports(lead.id)
   const isFirstVisit = existingVisits.length === 0
+  // useVisitReports is newest-first, so the first visit is the last entry.
+  const firstVisit = existingVisits[existingVisits.length - 1]
+  const inheritedLocation =
+    !isFirstVisit && firstVisit?.latitude != null && firstVisit?.longitude != null
+      ? { latitude: firstVisit.latitude, longitude: firstVisit.longitude, accuracy: firstVisit.location_accuracy }
+      : null
+  const outcomeOptions = isFirstVisit ? OUTCOME_OPTIONS : FOLLOW_UP_STAGE_OUTCOMES
 
   const [outcome, setOutcome] = useState<NonNullable<NewVisitReportInput['outcome']>>('finalized')
   const [kwInterest, setKwInterest] = useState('')
@@ -56,6 +70,12 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
   const [submitting, setSubmitting] = useState(false)
   const [showFollowUpSetter, setShowFollowUpSetter] = useState(false)
 
+  // Reports can finish loading after the form opens; if "Second Visit" was
+  // picked in that window, move to the closest remaining option.
+  useEffect(() => {
+    if (!isFirstVisit && outcome === 'second_visit') setOutcome('follow_up')
+  }, [isFirstVisit, outcome])
+
   const showNextVisitFields = outcome === 'second_visit' || outcome === 'follow_up'
   const nextVisitPlanned = showNextVisitFields && !!newVisitDate
 
@@ -65,12 +85,13 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
       setError('Pick a date for the next visit.')
       return
     }
-    if (locationPhoto.latitude == null || locationPhoto.longitude == null) {
-      setError('Capture the site location before saving — required for every visit.')
+    const location = inheritedLocation ?? locationPhoto
+    if (location.latitude == null || location.longitude == null) {
+      setError('Capture the site location before saving.')
       return
     }
-    if (isFirstVisit && !locationPhoto.photoUri) {
-      setError('Add a site photo before saving — required for the first visit.')
+    if (!locationPhoto.photoUri) {
+      setError('Add a site photo before saving — required for every visit.')
       return
     }
 
@@ -87,9 +108,9 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         quote_discussed: quoteDiscussed ? Number(quoteDiscussed) : undefined,
         next_step: nextStep || undefined,
         notes: notes || undefined,
-        latitude: locationPhoto.latitude,
-        longitude: locationPhoto.longitude,
-        location_accuracy: locationPhoto.accuracy,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        location_accuracy: location.accuracy,
         photo_url: photoPath,
       })
 
@@ -144,10 +165,10 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
       )}
 
       <Field label="Outcome">
-        <ChipSelect options={OUTCOME_OPTIONS} value={outcome} onChange={setOutcome} />
+        <ChipSelect options={outcomeOptions} value={outcome} onChange={setOutcome} />
       </Field>
 
-      <LocationPhotoCapture value={locationPhoto} onChange={setLocationPhoto} photoRequired={isFirstVisit} />
+      <LocationPhotoCapture value={locationPhoto} onChange={setLocationPhoto} locationRequired={!inheritedLocation} />
 
       {showNextVisitFields && (
         <View style={styles.row2}>

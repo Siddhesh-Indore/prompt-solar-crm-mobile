@@ -50,6 +50,13 @@ export const DATE_SLOTS: { value: DateSlot; label: string }[] = [
   { value: 'no_date', label: 'No date set' },
 ]
 
+/** Local 'YYYY-MM-DD'. toISOString() is UTC, which puts early-morning and
+ * evening times on the wrong calendar day in India. */
+export function localDateKey(d: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 function dayNumber(year: number, month: number, day: number): number {
   return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000)
 }
@@ -87,6 +94,28 @@ export function compareByVisit(infoFor: (id: string) => LeadVisitInfo) {
     const byDate = visitSortKey(a).localeCompare(visitSortKey(b))
     if (byDate !== 0) return byDate
     return (infoFor(a.id).lastVisitedAt ?? '').localeCompare(infoFor(b.id).lastVisitedAt ?? '')
+  }
+}
+
+const NEW_LEAD_WINDOW_MS = 24 * 60 * 60 * 1000
+
+/** Added in the last 24 hours — what an exec just entered in the field (or
+ * was just handed), as opposed to a visit planned days ago. */
+export function isNewLead(lead: Lead, now: Date = new Date()): boolean {
+  return now.getTime() - new Date(lead.created_at).getTime() < NEW_LEAD_WINDOW_MS
+}
+
+/** Newly added leads first, newest at the very top, then the usual
+ * soonest-visit order. Used where a fresh lead should be seen before
+ * anything already scheduled. */
+export function compareNewFirstThenVisit(infoFor: (id: string) => LeadVisitInfo) {
+  const byVisit = compareByVisit(infoFor)
+  return (a: Lead, b: Lead): number => {
+    const aNew = isNewLead(a)
+    const bNew = isNewLead(b)
+    if (aNew !== bNew) return aNew ? -1 : 1
+    if (aNew && bNew) return b.created_at.localeCompare(a.created_at)
+    return byVisit(a, b)
   }
 }
 

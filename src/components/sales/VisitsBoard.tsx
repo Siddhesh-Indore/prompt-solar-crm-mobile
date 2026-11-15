@@ -12,7 +12,7 @@ import { useLeads } from '@/hooks/useLeads'
 import { useLeadVisitInfo, useAdvancePendingLeads, useDoneLeads, useLostLeads } from '@/hooks/useVisitBoard'
 import {
   BOARD_STAGES, DATE_SLOTS, EMPTY_VISIT_INFO, classifyActiveLead, compareByLastVisitOldest, compareByVisit,
-  dateSlot, daysSince, type BoardStage, type DateSlot, type LeadVisitInfo,
+  compareNewFirstThenVisit, dateSlot, daysSince, isNewLead, type BoardStage, type DateSlot, type LeadVisitInfo,
 } from '@/lib/visitBoard'
 import VisitCard from '@/components/sales/VisitCard'
 import type { Lead } from '@/types/sales'
@@ -42,6 +42,7 @@ function cardBadges(stage: BoardStage, lead: Lead, info: LeadVisitInfo) {
   const pills: { text: string; tone: Parameters<typeof Pill>[0]['tone'] }[] = []
 
   if (stage === 'first_visit') {
+    if (isNewLead(lead)) pills.push({ text: 'New', tone: 'green' })
     pills.push({ text: '1st visit', tone: 'blue' })
   } else if (stage === 'follow_up') {
     pills.push(
@@ -98,7 +99,7 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
       const s = classifyActiveLead(lead, get(lead.id))
       if (s === 'first_visit' || s === 'follow_up' || s === 'intake_pending') buckets[s].push(lead)
     }
-    buckets.first_visit.sort(compareByVisit(get))
+    buckets.first_visit.sort(compareNewFirstThenVisit(get))
     buckets.follow_up.sort(compareByVisit(get))
     buckets.intake_pending.sort(compareByLastVisitOldest(get))
     return buckets
@@ -107,7 +108,7 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
   // The time-slot view covers customers with a visit to plan around —
   // intake / advance pending have no visit date to slot by.
   const dateRows = useMemo<Row[]>(() => {
-    const scheduled = [...byStage.first_visit, ...byStage.follow_up].sort(compareByVisit((id) => infoMap?.get(id) ?? EMPTY_VISIT_INFO))
+    const scheduled = [...byStage.first_visit, ...byStage.follow_up].sort(compareNewFirstThenVisit((id) => infoMap?.get(id) ?? EMPTY_VISIT_INFO))
     const rows: Row[] = []
     for (const slot of DATE_SLOTS) {
       const inSlot = scheduled.filter((l) => dateSlot(l.visit_date) === slot.value)
@@ -195,7 +196,7 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
               <Text style={styles.emptyTitle}>{emptyText}</Text>
             </View>
           }
-          ListFooterComponent={showHistoryCap ? <Text style={styles.footerNote}>Showing the 50 most recent.</Text> : null}
+          ListFooterComponent={showHistoryCap ? <Text style={styles.footerNote}>Showing the 50 most recent.</Text> : undefined}
           renderItem={({ item }) => renderLead(item, stage)}
         />
       ) : (

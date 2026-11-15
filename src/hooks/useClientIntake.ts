@@ -30,6 +30,8 @@ export function useAllClientIntakeForms(search: string | undefined, page: number
       let query = supabase
         .from('client_intake_forms')
         .select('*, lead:lead_id(id, name, source, section), exec:exec_id(id, full_name)', { count: 'exact' })
+        // Forms moved to the Reference List live there now (migration 089).
+        .is('moved_to_reference_at', null)
         .order('created_at', { ascending: false })
 
       const term = search?.trim()
@@ -61,7 +63,7 @@ export function useClientIntakeForm(leadId: string | undefined) {
   })
 }
 
-export type NewIntakeInput = Omit<ClientIntakeForm, 'id' | 'exec_id' | 'created_at' | 'updated_at'>
+export type NewIntakeInput = Omit<ClientIntakeForm, 'id' | 'exec_id' | 'created_at' | 'updated_at' | 'moved_to_reference_at'>
 
 export function useCreateClientIntakeForm() {
   const queryClient = useQueryClient()
