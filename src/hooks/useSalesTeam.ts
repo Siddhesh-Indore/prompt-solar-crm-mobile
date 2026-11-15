@@ -11,6 +11,9 @@ export function useSalesTeam(role: 'telecaller' | 'sales_exec') {
         .from('profiles')
         .select('*')
         .eq('role', role)
+        // Ex-employees stay in the database (their history needs a name) but
+        // shouldn't be offered as someone to hand a lead to.
+        .eq('is_archived', false)
         .order('full_name')
       if (error) throw error
       return (data ?? []) as Profile[]
