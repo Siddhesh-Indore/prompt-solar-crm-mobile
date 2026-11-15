@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
 import { getSignedPhotoUrl } from '@/lib/photoUrl'
+import { brand } from '@/constants/brand'
 
 interface PhotoThumbnailProps {
   bucket: string
@@ -44,8 +45,8 @@ export default function PhotoThumbnail({ bucket, path, onPress }: PhotoThumbnail
 }
 
 const styles = StyleSheet.create({
-  thumb: { width: 72, height: 72, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#fff' },
-  loading: { backgroundColor: '#f3f4f6' },
-  broken: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', borderStyle: 'dashed' },
-  brokenText: { fontSize: 9, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 4 },
+  thumb: { width: 72, height: 72, borderRadius: 10, borderWidth: 1, borderColor: brand.borderLight, backgroundColor: '#fff' },
+  loading: { backgroundColor: brand.surfaceAlt },
+  broken: { alignItems: 'center', justifyContent: 'center', backgroundColor: brand.bg, borderStyle: 'dashed' },
+  brokenText: { fontSize: 9, color: brand.faint, textAlign: 'center', paddingHorizontal: 4 },
 })

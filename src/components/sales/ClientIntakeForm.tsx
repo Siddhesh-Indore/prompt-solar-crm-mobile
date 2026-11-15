@@ -19,6 +19,8 @@ import {
   hasGovernmentSubsidy, suggestedSubsidy, remainingAfterAdvance, type CustomerType,
 } from '@/lib/subsidy'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
+import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 const ROOF_OPTIONS = [{ value: 'rcc', label: 'RCC' }, { value: 'roofing_metal_sheets', label: 'Roofing Metal Sheets' }] as const
 const PANEL_OPTIONS = [{ value: 'adani', label: 'Adani' }, { value: 'waaree', label: 'Waaree' }, { value: 'other', label: 'Other' }] as const
@@ -272,8 +274,10 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
         client_signature_url: null,
         salesman_signature_url: null,
       })
+      hapticSuccess()
       onDone()
     } catch (err) {
+      hapticWarning()
       setError(err instanceof Error ? err.message : 'Failed to save intake form')
     } finally {
       setSubmitting(false)
@@ -341,23 +345,23 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
 
       <Text style={styles.sectionTitle}>Client Info</Text>
       <Field label="Full Name *">
-        <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholderTextColor={brand.faint} />
       </Field>
       <Field label="Phone *">
-        <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="numeric" maxLength={10} placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="numeric" maxLength={10} placeholderTextColor={brand.faint} />
       </Field>
       <Field label="Address *">
-        <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholderTextColor={brand.faint} />
       </Field>
       <View style={styles.row2}>
         <View style={styles.col}>
           <Field label="Email">
-            <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={brand.faint} />
           </Field>
         </View>
         <View style={styles.col}>
           <Field label="Age">
-            <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholderTextColor={brand.faint} />
           </Field>
         </View>
       </View>
@@ -367,7 +371,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
 
       <Text style={styles.sectionTitle}>System Info</Text>
       <Field label="System Size (kW) *">
-        <TextInput style={styles.input} value={kw} onChangeText={setKw} keyboardType="numeric" placeholder="e.g. 5" placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={kw} onChangeText={setKw} keyboardType="numeric" placeholder="e.g. 5" placeholderTextColor={brand.faint} />
       </Field>
       <Field label="Roof Type">
         <ChipSelect options={ROOF_OPTIONS as any} value={roofType as any} onChange={setRoofType} />
@@ -377,25 +381,25 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
       </Field>
       {panelCompany === 'other' && (
         <Field label="Panel Company (Other)">
-          <TextInput style={styles.input} value={panelCompanyOther} onChangeText={setPanelCompanyOther} placeholderTextColor="#9ca3af" />
+          <TextInput style={styles.input} value={panelCompanyOther} onChangeText={setPanelCompanyOther} placeholderTextColor={brand.faint} />
         </Field>
       )}
       <Field label="Panel Size">
-        <TextInput style={styles.input} value={panelSize} onChangeText={setPanelSize} placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={panelSize} onChangeText={setPanelSize} placeholderTextColor={brand.faint} />
       </Field>
       <Field label="Inverter">
         <ChipSelect options={INVERTER_OPTIONS as any} value={inverter as any} onChange={setInverter} />
       </Field>
       {inverter === 'other' && (
         <Field label="Inverter (Other)">
-          <TextInput style={styles.input} value={inverterOther} onChangeText={setInverterOther} placeholderTextColor="#9ca3af" />
+          <TextInput style={styles.input} value={inverterOther} onChangeText={setInverterOther} placeholderTextColor={brand.faint} />
         </Field>
       )}
       <Field label="Structure">
         <ChipSelect options={STRUCTURE_OPTIONS as any} value={structure as any} onChange={setStructure} />
       </Field>
       <Field label="Structure Height">
-        <TextInput style={styles.input} value={structureHeight} onChangeText={setStructureHeight} placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={structureHeight} onChangeText={setStructureHeight} placeholderTextColor={brand.faint} />
       </Field>
 
       <View style={styles.sectionHeaderRow}>
@@ -431,7 +435,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
         <ChipSelect options={PAYMENT_OPTIONS as any} value={paymentMethod} onChange={(v) => setPaymentMethod(v as 'cash' | 'loan')} />
       </Field>
       <Field label="Total Cost (₹) *">
-        <TextInput style={styles.input} value={totalCost} onChangeText={setTotalCost} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={totalCost} onChangeText={setTotalCost} keyboardType="numeric" placeholderTextColor={brand.faint} />
       </Field>
 
       {paymentMethod === 'cash' ? (
@@ -445,7 +449,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
                   onChangeText={setCashAdvance}
                   editable={advanceMode !== 'none'}
                   keyboardType="numeric"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={brand.faint}
                 />
               </Field>
             </View>
@@ -463,7 +467,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
                 value={advanceNote}
                 onChangeText={setAdvanceNote}
                 placeholder="Why hasn't the customer paid the advance, and when do they expect to?"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={brand.faint}
                 multiline
                 textAlignVertical="top"
               />
@@ -518,22 +522,22 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
       ) : (
         <>
           <Field label="Bank Name">
-            <TextInput style={styles.input} value={loanBankName} onChangeText={setLoanBankName} placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={loanBankName} onChangeText={setLoanBankName} placeholderTextColor={brand.faint} />
           </Field>
           <View style={styles.row2}>
             <View style={styles.col}>
               <Field label="Advance (₹)">
-                <TextInput style={styles.input} value={loanAdvance} onChangeText={setLoanAdvance} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+                <TextInput style={styles.input} value={loanAdvance} onChangeText={setLoanAdvance} keyboardType="numeric" placeholderTextColor={brand.faint} />
               </Field>
             </View>
             <View style={styles.col}>
               <Field label="After Dispersal (₹)">
-                <TextInput style={styles.input} value={loanAfterDispersal} onChangeText={setLoanAfterDispersal} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+                <TextInput style={styles.input} value={loanAfterDispersal} onChangeText={setLoanAfterDispersal} keyboardType="numeric" placeholderTextColor={brand.faint} />
               </Field>
             </View>
           </View>
           <Field label="Subsidy to Consumer (₹)">
-            <TextInput style={styles.input} value={loanSubsidyConsumer} onChangeText={setLoanSubsidyConsumer} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={loanSubsidyConsumer} onChangeText={setLoanSubsidyConsumer} keyboardType="numeric" placeholderTextColor={brand.faint} />
           </Field>
         </>
       )}
@@ -613,7 +617,7 @@ export default function ClientIntakeForm({ lead, onDone, onCancel }: ClientIntak
           </TouchableOpacity>
         )}
         <TouchableOpacity style={[styles.primaryBtn, submitting && styles.btnDisabled]} onPress={submit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#052e16" /> : <Text style={styles.primaryBtnText}>Submit & Convert Lead</Text>}
+          {submitting ? <ActivityIndicator color={brand.onGreen} /> : <Text style={styles.primaryBtnText}>Submit & Convert Lead</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -631,51 +635,51 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const styles = StyleSheet.create({
   form: { gap: 4 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#111827', marginTop: 10, marginBottom: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: brand.ink, marginTop: 10, marginBottom: 8 },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 8 },
-  changeTypeLink: { fontSize: 12, fontWeight: '600', color: '#6b7280', textDecorationLine: 'underline' },
+  changeTypeLink: { fontSize: 12, fontWeight: '600', color: brand.muted, textDecorationLine: 'underline' },
   field: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
-  inputDisabled: { backgroundColor: '#f9fafb', color: '#9ca3af' },
-  readOnlyInput: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, backgroundColor: '#f9fafb' },
-  readOnlyInputText: { fontSize: 14, color: '#374151', fontWeight: '600' },
-  caption: { fontSize: 11, color: '#9ca3af', marginTop: 5 },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: brand.ink, backgroundColor: '#fff' },
+  inputDisabled: { backgroundColor: brand.bg, color: brand.faint },
+  readOnlyInput: { borderWidth: 1, borderColor: brand.borderLight, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, backgroundColor: brand.bg },
+  readOnlyInputText: { fontSize: 14, color: brand.text, fontWeight: '600' },
+  caption: { fontSize: 11, color: brand.faint, marginTop: 5 },
   row2: { flexDirection: 'row', gap: 12 },
   col: { flex: 1 },
   checkGrid: { marginBottom: 8 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-  checkLabel: { fontSize: 13, color: '#374151', flexShrink: 1 },
-  nameChangeBlock: { paddingLeft: 12, marginBottom: 8, borderLeftWidth: 2, borderLeftColor: '#f3f4f6' },
-  errorBox: { backgroundColor: '#fee2e2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 10, marginBottom: 14 },
-  errorText: { color: '#b91c1c', fontSize: 12 },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
-  secondaryBtnText: { fontSize: 13, color: '#374151', fontWeight: '600' },
-  primaryBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, backgroundColor: '#4ade80', alignItems: 'center', justifyContent: 'center', minWidth: 180 },
+  checkLabel: { fontSize: 13, color: brand.text, flexShrink: 1 },
+  nameChangeBlock: { paddingLeft: 12, marginBottom: 8, borderLeftWidth: 2, borderLeftColor: brand.surfaceAlt },
+  errorBox: { backgroundColor: brand.dangerSoft, borderWidth: 1, borderColor: brand.dangerBorder, borderRadius: 10, padding: 10, marginBottom: 14 },
+  errorText: { color: brand.danger, fontSize: 12 },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: brand.surfaceAlt },
+  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: brand.border, alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { fontSize: 13, color: brand.text, fontWeight: '600' },
+  primaryBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, backgroundColor: brand.green, alignItems: 'center', justifyContent: 'center', minWidth: 180 },
   btnDisabled: { opacity: 0.6 },
-  primaryBtnText: { fontSize: 13, color: '#052e16', fontWeight: '700' },
-  gateSubtitle: { fontSize: 12, color: '#6b7280', marginTop: -4, marginBottom: 4 },
-  typeCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
-  typeCardTitle: { fontSize: 14, fontWeight: '600', color: '#1f2937' },
-  typeCardNote: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  primaryBtnText: { fontSize: 13, color: brand.onGreen, fontWeight: '700' },
+  gateSubtitle: { fontSize: 12, color: brand.muted, marginTop: -4, marginBottom: 4 },
+  typeCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: brand.borderLight, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff' },
+  typeCardTitle: { fontSize: 14, fontWeight: '600', color: brand.ink },
+  typeCardNote: { fontSize: 12, color: brand.muted, marginTop: 2 },
   typeCardPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  typeCardPillYes: { backgroundColor: '#f0fdf4' },
-  typeCardPillNo: { backgroundColor: '#f3f4f6' },
+  typeCardPillYes: { backgroundColor: brand.greenTint },
+  typeCardPillNo: { backgroundColor: brand.surfaceAlt },
   typeCardPillText: { fontSize: 11, fontWeight: '700' },
-  typeCardPillTextYes: { color: '#15803d' },
-  typeCardPillTextNo: { color: '#6b7280' },
-  noSubsidyNote: { backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 14 },
-  noSubsidyNoteText: { fontSize: 13, color: '#4b5563' },
-  qrCard: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, backgroundColor: '#f9fafb', padding: 14, marginBottom: 14 },
-  qrThumb: { width: 96, height: 96, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#fff' },
-  qrTitle: { fontSize: 13, fontWeight: '700', color: '#1f2937' },
-  qrLine: { fontSize: 12, color: '#6b7280' },
-  qrMono: { color: '#374151', fontWeight: '600' },
+  typeCardPillTextYes: { color: brand.greenDark },
+  typeCardPillTextNo: { color: brand.muted },
+  noSubsidyNote: { backgroundColor: brand.bg, borderWidth: 1, borderColor: brand.borderLight, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 14 },
+  noSubsidyNoteText: { fontSize: 13, color: brand.textMuted },
+  qrCard: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 12, backgroundColor: brand.bg, padding: 14, marginBottom: 14 },
+  qrThumb: { width: 96, height: 96, borderRadius: 8, borderWidth: 1, borderColor: brand.borderLight, backgroundColor: '#fff' },
+  qrTitle: { fontSize: 13, fontWeight: '700', color: brand.ink },
+  qrLine: { fontSize: 12, color: brand.muted },
+  qrMono: { color: brand.text, fontWeight: '600' },
   qrModalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   qrModalCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, width: '100%', maxWidth: 360, alignItems: 'center' },
-  qrModalTitle: { fontSize: 13, fontWeight: '700', color: '#1f2937', marginBottom: 12, textAlign: 'center' },
+  qrModalTitle: { fontSize: 13, fontWeight: '700', color: brand.ink, marginBottom: 12, textAlign: 'center' },
   qrModalImage: { width: '100%', height: 320, borderRadius: 10 },
-  qrModalCloseBtn: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, backgroundColor: '#f3f4f6' },
-  qrModalCloseBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  qrModalCloseBtn: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, backgroundColor: brand.surfaceAlt },
+  qrModalCloseBtnText: { fontSize: 13, fontWeight: '600', color: brand.text },
 })

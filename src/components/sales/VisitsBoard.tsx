@@ -6,7 +6,7 @@
 // Cards move on their own — a lead's stage is derived from its visit reports
 // and intake form (see lib/visitBoard), never set by hand.
 import { useMemo, useState } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, RefreshControl, LayoutAnimation } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLeads } from '@/hooks/useLeads'
 import { useLeadVisitInfo, useAdvancePendingLeads, useDoneLeads, useLostLeads } from '@/hooks/useVisitBoard'
@@ -16,6 +16,9 @@ import {
 } from '@/lib/visitBoard'
 import VisitCard from '@/components/sales/VisitCard'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
+import { hapticSelect } from '@/lib/haptics'
+import { SkeletonList } from '@/components/ui/Skeleton'
 
 const ACTIVE_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
 // Past this many days without a visit, a waiting customer is flagged red.
@@ -120,6 +123,9 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
   }, [byStage.first_visit, byStage.follow_up, infoMap])
 
   function refreshAll() {
+    // A saved visit moves its card to another stage when the refetch lands —
+    // animate that layout change so the card visibly slides away.
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     refetchLeads()
     queryClient.invalidateQueries({ queryKey: ['visit-board'] })
   }
@@ -152,7 +158,7 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
     <View style={{ flex: 1 }}>
       <View style={styles.viewToggle}>
         {(['stage', 'date'] as const).map((v) => (
-          <TouchableOpacity key={v} style={[styles.toggleBtn, view === v && styles.toggleBtnActive]} onPress={() => setView(v)}>
+          <TouchableOpacity key={v} style={[styles.toggleBtn, view === v && styles.toggleBtnActive]} onPress={() => { hapticSelect(); setView(v) }}>
             <Text style={[styles.toggleText, view === v && styles.toggleTextActive]}>{v === 'stage' ? 'By Stage' : 'By Date'}</Text>
           </TouchableOpacity>
         ))}
@@ -167,7 +173,7 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
               // rather than a misleading 0.
               const count = (s.value === 'done' || s.value === 'lost') && s.value !== stage ? null : byStage[s.value].length
               return (
-                <TouchableOpacity key={s.value} style={[styles.tab, active && styles.tabActive]} onPress={() => setStage(s.value)}>
+                <TouchableOpacity key={s.value} style={[styles.tab, active && styles.tabActive]} onPress={() => { hapticSelect(); setStage(s.value) }}>
                   <Text style={[styles.tabText, active && styles.tabTextActive]}>{s.label}</Text>
                   {count !== null && (
                     <View style={[styles.tabCount, active && styles.tabCountActive]}>
@@ -182,9 +188,7 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
       )}
 
       {leadsLoading || waitingOnInfo || (view === 'stage' && stageLoading) ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#4ade80" />
-        </View>
+        <SkeletonList />
       ) : view === 'stage' ? (
         <FlatList
           data={stageList}
@@ -228,39 +232,39 @@ export default function VisitsBoard({ execId, onOpenDetail }: Props) {
 }
 
 const pillTones = {
-  blue: { box: { backgroundColor: '#dbeafe' }, text: { color: '#1d4ed8' } },
-  amber: { box: { backgroundColor: '#fef3c7' }, text: { color: '#b45309' } },
-  violet: { box: { backgroundColor: '#ede9fe' }, text: { color: '#6d28d9' } },
-  red: { box: { backgroundColor: '#fee2e2' }, text: { color: '#b91c1c' } },
-  green: { box: { backgroundColor: '#d1fae5' }, text: { color: '#047857' } },
-  gray: { box: { backgroundColor: '#f3f4f6' }, text: { color: '#4b5563' } },
+  blue: { box: { backgroundColor: brand.infoSoft }, text: { color: brand.info } },
+  amber: { box: { backgroundColor: brand.warningSoft }, text: { color: brand.warning } },
+  violet: { box: { backgroundColor: brand.violetSoft }, text: { color: brand.violet } },
+  red: { box: { backgroundColor: brand.dangerSoft }, text: { color: brand.danger } },
+  green: { box: { backgroundColor: brand.greenSoft }, text: { color: brand.greenDark } },
+  gray: { box: { backgroundColor: brand.surfaceAlt }, text: { color: brand.textMuted } },
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  viewToggle: { flexDirection: 'row', alignSelf: 'flex-start', marginHorizontal: 20, marginTop: 4, marginBottom: 10, padding: 3, borderRadius: 10, backgroundColor: '#f3f4f6' },
+  viewToggle: { flexDirection: 'row', alignSelf: 'flex-start', marginHorizontal: 20, marginTop: 4, marginBottom: 10, padding: 3, borderRadius: 10, backgroundColor: brand.surfaceAlt },
   toggleBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8 },
   toggleBtnActive: { backgroundColor: '#fff' },
-  toggleText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  toggleTextActive: { color: '#111827' },
+  toggleText: { fontSize: 12, fontWeight: '600', color: brand.muted },
+  toggleTextActive: { color: brand.ink },
   tabs: { paddingHorizontal: 16, paddingBottom: 6, gap: 8 },
-  tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  tabActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  tabText: { fontSize: 13, fontWeight: '500', color: '#374151' },
-  tabTextActive: { color: '#052e16', fontWeight: '700' },
-  tabCount: { minWidth: 20, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999, backgroundColor: '#f3f4f6', alignItems: 'center' },
-  tabCountActive: { backgroundColor: '#052e16' },
-  tabCountText: { fontSize: 11, fontWeight: '700', color: '#4b5563' },
-  tabCountTextActive: { color: '#4ade80' },
+  tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  tabActive: { backgroundColor: brand.green, borderColor: brand.green },
+  tabText: { fontSize: 13, fontWeight: '500', color: brand.text },
+  tabTextActive: { color: brand.onGreen, fontWeight: '700' },
+  tabCount: { minWidth: 20, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999, backgroundColor: brand.surfaceAlt, alignItems: 'center' },
+  tabCountActive: { backgroundColor: brand.onGreen },
+  tabCountText: { fontSize: 11, fontWeight: '700', color: brand.textMuted },
+  tabCountTextActive: { color: brand.green },
   listContent: { padding: 16, gap: 12 },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563', textAlign: 'center', paddingHorizontal: 30 },
-  footerNote: { fontSize: 11, color: '#9ca3af', textAlign: 'center', paddingVertical: 8 },
-  dateNote: { fontSize: 12, color: '#6b7280', marginBottom: 10 },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: brand.textMuted, textAlign: 'center', paddingHorizontal: 30 },
+  footerNote: { fontSize: 11, color: brand.faint, textAlign: 'center', paddingVertical: 8 },
+  dateNote: { fontSize: 12, color: brand.muted, marginBottom: 10 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 8 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  sectionTitleOverdue: { color: '#b91c1c' },
-  sectionCount: { fontSize: 12, fontWeight: '700', color: '#6b7280' },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: brand.ink },
+  sectionTitleOverdue: { color: brand.danger },
+  sectionCount: { fontSize: 12, fontWeight: '700', color: brand.muted },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   pill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },
   pillText: { fontSize: 11, fontWeight: '600' },

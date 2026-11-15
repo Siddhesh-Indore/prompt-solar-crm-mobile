@@ -12,6 +12,7 @@ import BackButton from '@/components/BackButton'
 import FormSheet from '@/components/sales/FormSheet'
 import ChipSelect from '@/components/sales/ChipSelect'
 import type { Customer, LeadSource } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const SOURCE_OPTIONS: { value: LeadSource; label: string }[] = [
   { value: 'meta', label: 'Meta Ads' },
@@ -77,15 +78,15 @@ function AddCustomerForm({ onDone, onCancel }: { onDone: () => void; onCancel: (
       {error && <Text style={styles.error}>{error}</Text>}
       <View>
         <Text style={styles.label}>Name</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Full name" placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Full name" placeholderTextColor={brand.faint} />
       </View>
       <View>
         <Text style={styles.label}>Phone</Text>
-        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="10-digit number" placeholderTextColor="#9ca3af" keyboardType="phone-pad" maxLength={10} />
+        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="10-digit number" placeholderTextColor={brand.faint} keyboardType="phone-pad" maxLength={10} />
       </View>
       <View>
         <Text style={styles.label}>Address</Text>
-        <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholder="Optional" placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholder="Optional" placeholderTextColor={brand.faint} />
       </View>
       <View>
         <Text style={styles.label}>Source</Text>
@@ -93,14 +94,14 @@ function AddCustomerForm({ onDone, onCancel }: { onDone: () => void; onCancel: (
       </View>
       <View>
         <Text style={styles.label}>Notes</Text>
-        <TextInput style={[styles.input, { height: 70 }]} value={notes} onChangeText={setNotes} placeholder="Optional" placeholderTextColor="#9ca3af" multiline textAlignVertical="top" />
+        <TextInput style={[styles.input, { height: 70 }]} value={notes} onChangeText={setNotes} placeholder="Optional" placeholderTextColor={brand.faint} multiline textAlignVertical="top" />
       </View>
       <View style={styles.formActions}>
         <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
           <Text style={styles.cancelBtnText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.submitBtn} onPress={submit} disabled={createCustomer.isPending}>
-          {createCustomer.isPending ? <ActivityIndicator size="small" color="#052e16" /> : <Text style={styles.submitBtnText}>Add Customer</Text>}
+          {createCustomer.isPending ? <ActivityIndicator size="small" color={brand.onGreen} /> : <Text style={styles.submitBtnText}>Add Customer</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -138,12 +139,12 @@ export default function CustomersScreen() {
         value={search}
         onChangeText={setSearch}
         placeholder="Search by name or phone…"
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={brand.faint}
       />
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#4ade80" />
+          <ActivityIndicator size="large" color={brand.green} />
         </View>
       ) : (
         <FlatList
@@ -171,35 +172,35 @@ export default function CustomersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb', paddingHorizontal: 20 },
+  safe: { flex: 1, backgroundColor: brand.bg, paddingHorizontal: 20 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, gap: 12 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  addBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: '#4ade80' },
-  addBtnText: { fontSize: 13, fontWeight: '700', color: '#052e16' },
-  searchInput: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#111827', backgroundColor: '#fff', marginBottom: 12 },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2 },
+  addBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: brand.green },
+  addBtnText: { fontSize: 13, fontWeight: '700', color: brand.onGreen },
+  searchInput: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: brand.ink, backgroundColor: '#fff', marginBottom: 12 },
   listContent: { paddingBottom: 24, gap: 12 },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  emptySubtitle: { fontSize: 12, color: '#9ca3af', marginTop: 4 },
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, padding: 14 },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: brand.textMuted },
+  emptySubtitle: { fontSize: 12, color: brand.faint, marginTop: 4 },
+  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 14, padding: 14 },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  name: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  convertedBadge: { backgroundColor: '#d1fae5', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  convertedBadgeText: { fontSize: 11, fontWeight: '600', color: '#047857' },
-  phone: { fontSize: 13, color: '#047857', fontWeight: '600', marginTop: 6 },
-  meta: { fontSize: 13, color: '#6b7280', marginTop: 4 },
+  name: { fontSize: 15, fontWeight: '600', color: brand.ink },
+  convertedBadge: { backgroundColor: brand.greenSoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  convertedBadgeText: { fontSize: 11, fontWeight: '600', color: brand.greenDark },
+  phone: { fontSize: 13, color: brand.greenDark, fontWeight: '600', marginTop: 6 },
+  meta: { fontSize: 13, color: brand.muted, marginTop: 4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  metaTag: { fontSize: 11, color: '#374151', backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, textTransform: 'capitalize' },
-  metaDate: { fontSize: 11, color: '#9ca3af' },
-  notes: { fontSize: 12, color: '#6b7280', marginTop: 8, fontStyle: 'italic' },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
-  error: { fontSize: 12, color: '#dc2626', backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 10 },
+  metaTag: { fontSize: 11, color: brand.text, backgroundColor: brand.surfaceAlt, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, textTransform: 'capitalize' },
+  metaDate: { fontSize: 11, color: brand.faint },
+  notes: { fontSize: 12, color: brand.muted, marginTop: 8, fontStyle: 'italic' },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: brand.ink, backgroundColor: '#fff' },
+  error: { fontSize: 12, color: brand.danger, backgroundColor: brand.dangerSoft, borderWidth: 1, borderColor: brand.dangerBorder, borderRadius: 10, padding: 10 },
   formActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center' },
-  cancelBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  submitBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: '#4ade80', alignItems: 'center' },
-  submitBtnText: { fontSize: 13, fontWeight: '700', color: '#052e16' },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: brand.border, alignItems: 'center' },
+  cancelBtnText: { fontSize: 13, fontWeight: '600', color: brand.text },
+  submitBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: brand.green, alignItems: 'center' },
+  submitBtnText: { fontSize: 13, fontWeight: '700', color: brand.onGreen },
 })

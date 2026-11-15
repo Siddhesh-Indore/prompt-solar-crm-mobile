@@ -5,6 +5,7 @@
 import { View, Text, StyleSheet } from 'react-native'
 import { useCallLogs } from '@/hooks/useCallLogs'
 import { useVisitReports } from '@/hooks/useVisitReports'
+import { brand } from '@/constants/brand'
 
 const CALL_TYPE_LABEL: Record<string, string> = {
   qualification: 'Qualification', pre_visit: 'Pre-Visit', follow_up: 'Follow-up', callback: 'Callback',
@@ -82,14 +83,14 @@ export default function CallVisitHistory({ leadId }: { leadId: string | undefine
 
 const styles = StyleSheet.create({
   section: { marginTop: 20 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  sectionCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 14 },
-  entry: { paddingBottom: 10, marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: brand.faint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  sectionCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 12, padding: 14 },
+  entry: { paddingBottom: 10, marginBottom: 10, borderBottomWidth: 1, borderBottomColor: brand.surfaceAlt },
   entryLast: { paddingBottom: 0, marginBottom: 0, borderBottomWidth: 0 },
   entryTopRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-  entryKind: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  pill: { backgroundColor: '#f3f4f6', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  pillText: { fontSize: 11, color: '#6b7280' },
-  entryMeta: { fontSize: 11, color: '#9ca3af', marginTop: 3 },
-  entryNotes: { fontSize: 12, color: '#4b5563', marginTop: 4 },
+  entryKind: { fontSize: 13, fontWeight: '600', color: brand.ink },
+  pill: { backgroundColor: brand.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  pillText: { fontSize: 11, color: brand.muted },
+  entryMeta: { fontSize: 11, color: brand.faint, marginTop: 3 },
+  entryNotes: { fontSize: 12, color: brand.textMuted, marginTop: 4 },
 })

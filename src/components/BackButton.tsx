@@ -1,5 +1,6 @@
 // src/components/BackButton.tsx
 import { Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { brand } from '@/constants/brand'
 
 interface BackButtonProps {
   onPress: () => void
@@ -23,9 +24,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: brand.border,
     backgroundColor: '#fff',
     marginBottom: 16,
   },
-  text: { fontSize: 16, color: '#047857', fontWeight: '700' },
+  text: { fontSize: 16, color: brand.greenDark, fontWeight: '700' },
 })

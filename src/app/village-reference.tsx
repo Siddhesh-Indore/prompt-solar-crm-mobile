@@ -16,6 +16,7 @@ import ClientIntakeDetailCard from '@/components/sales/ClientIntakeDetailCard'
 import BackButton from '@/components/BackButton'
 import { shareText, mapsLinkFor } from '@/lib/share'
 import type { FinalizedCustomer } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const INTAKE_PAGE_SIZE = 10
 
@@ -88,14 +89,14 @@ export default function VillageReferenceScreen() {
               value={search}
               onChangeText={setSearch}
               placeholder="Search village or name…"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
               autoCapitalize="none"
             />
           </View>
 
           {isLoading ? (
             <View style={styles.center}>
-              <ActivityIndicator size="large" color="#4ade80" />
+              <ActivityIndicator size="large" color={brand.green} />
             </View>
           ) : (
             <FlatList
@@ -123,14 +124,14 @@ export default function VillageReferenceScreen() {
               value={intakeSearch}
               onChangeText={(v) => { setIntakeSearch(v); setIntakePage(0) }}
               placeholder="Search by name, phone, or address…"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
               autoCapitalize="none"
             />
           </View>
 
           {intakeLoading ? (
             <View style={styles.center}>
-              <ActivityIndicator size="large" color="#4ade80" />
+              <ActivityIndicator size="large" color={brand.green} />
             </View>
           ) : (
             <FlatList
@@ -176,35 +177,35 @@ export default function VillageReferenceScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: brand.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2, marginHorizontal: 20 },
-  tabRow: { flexDirection: 'row', gap: 6, marginHorizontal: 20, marginTop: 10, backgroundColor: '#f3f4f6', borderRadius: 10, padding: 4 },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2, marginHorizontal: 20 },
+  tabRow: { flexDirection: 'row', gap: 6, marginHorizontal: 20, marginTop: 10, backgroundColor: brand.surfaceAlt, borderRadius: 10, padding: 4 },
   tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
   tabActive: { backgroundColor: '#fff' },
-  tabText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  tabTextActive: { color: '#111827' },
+  tabText: { fontSize: 12, fontWeight: '600', color: brand.muted },
+  tabTextActive: { color: brand.ink },
   searchWrap: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
   searchInput: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14,
-    paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff',
+    borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14,
+    paddingVertical: 11, fontSize: 14, color: brand.ink, backgroundColor: '#fff',
   },
   listContent: { padding: 16, paddingTop: 4, gap: 10 },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  emptySubtitle: { fontSize: 12, color: '#9ca3af', marginTop: 4, textAlign: 'center', paddingHorizontal: 30 },
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, padding: 14 },
-  name: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: brand.textMuted },
+  emptySubtitle: { fontSize: 12, color: brand.faint, marginTop: 4, textAlign: 'center', paddingHorizontal: 30 },
+  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 14, padding: 14 },
+  name: { fontSize: 15, fontWeight: '600', color: brand.ink },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
-  metaText: { fontSize: 12, color: '#6b7280' },
-  phone: { fontSize: 12, color: '#047857', fontWeight: '600' },
+  metaText: { fontSize: 12, color: brand.muted },
+  phone: { fontSize: 12, color: brand.greenDark, fontWeight: '600' },
   cardActions: { flexDirection: 'row', gap: 16, marginTop: 6 },
-  shareLink: { fontSize: 12, color: '#374151', fontWeight: '600' },
+  shareLink: { fontSize: 12, color: brand.text, fontWeight: '600' },
   pager: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 },
-  pagerBtn: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#fff' },
+  pagerBtn: { borderWidth: 1, borderColor: brand.border, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#fff' },
   pagerBtnDisabled: { opacity: 0.4 },
-  pagerBtnText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  pagerLabel: { fontSize: 12, color: '#6b7280' },
+  pagerBtnText: { fontSize: 12, fontWeight: '600', color: brand.text },
+  pagerLabel: { fontSize: 12, color: brand.muted },
 })

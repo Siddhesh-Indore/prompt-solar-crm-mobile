@@ -9,6 +9,7 @@
 // "Employee Ref", so on that source the two badges were indistinguishable
 // at a glance. Violet doesn't collide with any source or stage color.
 import { View, Text, StyleSheet } from 'react-native'
+import { brand } from '@/constants/brand'
 
 export default function SendBackBadge({ sentBack }: { sentBack: boolean }) {
   if (!sentBack) return null
@@ -20,6 +21,6 @@ export default function SendBackBadge({ sentBack }: { sentBack: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1, backgroundColor: '#ede9fe', borderColor: '#ddd6fe' },
-  text: { fontSize: 11, fontWeight: '600', color: '#6d28d9' },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1, backgroundColor: brand.violetSoft, borderColor: '#ddd6fe' },
+  text: { fontSize: 11, fontWeight: '600', color: brand.violet },
 })

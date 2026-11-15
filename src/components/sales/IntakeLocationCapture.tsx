@@ -6,6 +6,7 @@
 // this is just a more precise supplement when it's easy to add.
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import { useCaptureLocation } from '@/hooks/useCaptureLocation'
+import { brand } from '@/constants/brand'
 
 export interface IntakeLocationValue {
   latitude: number | null
@@ -35,7 +36,7 @@ export default function IntakeLocationCapture({ value, onChange }: IntakeLocatio
 
       <TouchableOpacity style={[styles.button, hasGps && styles.buttonDone]} onPress={handleCapture} disabled={locating}>
         {locating ? (
-          <ActivityIndicator size="small" color="#6b7280" />
+          <ActivityIndicator size="small" color={brand.muted} />
         ) : (
           <Text style={[styles.buttonText, hasGps && styles.buttonTextDone]}>
             {hasGps ? `📍 Location captured (±${value.accuracy ? Math.round(value.accuracy) : '?'}m)` : '📍 Capture Location'}
@@ -48,7 +49,7 @@ export default function IntakeLocationCapture({ value, onChange }: IntakeLocatio
         value={value.mapsLink}
         onChangeText={(v) => onChange({ ...value, mapsLink: v })}
         placeholder="Or paste a Google Maps link…"
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={brand.faint}
         autoCapitalize="none"
         keyboardType="url"
       />
@@ -58,18 +59,18 @@ export default function IntakeLocationCapture({ value, onChange }: IntakeLocatio
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 2 },
-  optional: { color: '#9ca3af', fontWeight: '400' },
-  hint: { fontSize: 11, color: '#9ca3af', marginBottom: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 2 },
+  optional: { color: brand.faint, fontWeight: '400' },
+  hint: { fontSize: 11, color: brand.faint, marginBottom: 8 },
   button: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingVertical: 12,
+    borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingVertical: 12,
     alignItems: 'center', backgroundColor: '#fff', marginBottom: 8,
   },
-  buttonDone: { borderColor: '#4ade80', backgroundColor: '#f0fdf4' },
-  buttonText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  buttonTextDone: { color: '#047857' },
+  buttonDone: { borderColor: brand.green, backgroundColor: brand.greenTint },
+  buttonText: { fontSize: 13, fontWeight: '600', color: brand.text },
+  buttonTextDone: { color: brand.greenDark },
   input: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14,
-    paddingVertical: 11, fontSize: 13, color: '#111827', backgroundColor: '#fff',
+    borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14,
+    paddingVertical: 11, fontSize: 13, color: brand.ink, backgroundColor: '#fff',
   },
 })

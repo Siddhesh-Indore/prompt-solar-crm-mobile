@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/context/AuthContext'
 import { useScreenCaptureGuard } from '@/hooks/useScreenCaptureGuard'
+import '@/lib/queryFocus'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },

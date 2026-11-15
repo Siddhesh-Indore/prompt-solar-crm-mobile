@@ -19,6 +19,7 @@ import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
 import CallVisitHistory from '@/components/sales/CallVisitHistory'
 import BackButton from '@/components/BackButton'
 import type { Lead, LeadTemperature } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const SECTION_OPTIONS = [
   'Ale Section', 'AWSARI', 'Belha Section', 'Loni', 'MCR R', 'MCR U',
@@ -249,7 +250,7 @@ export default function QueueScreen() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search by name or phone…"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={brand.faint}
         />
         <View style={styles.filterBarRow}>
           <TouchableOpacity
@@ -272,7 +273,7 @@ export default function QueueScreen() {
               value={village}
               onChangeText={setVillage}
               placeholder="Search by village/address…"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
             />
 
             <Text style={styles.filterGroupLabel}>Section</Text>
@@ -321,7 +322,7 @@ export default function QueueScreen() {
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#4ade80" />
+          <ActivityIndicator size="large" color={brand.green} />
         </View>
       ) : (
         <FlatList
@@ -334,7 +335,7 @@ export default function QueueScreen() {
           ListFooterComponent={
             isFetchingNextPage ? (
               <View style={styles.loadingMore}>
-                <ActivityIndicator size="small" color="#4ade80" />
+                <ActivityIndicator size="small" color={brand.green} />
               </View>
             ) : undefined
           }
@@ -368,7 +369,7 @@ export default function QueueScreen() {
                       <Text style={styles.lockedText}>Locked by {lead.locked_by_profile?.full_name ?? 'someone'}</Text>
                     )}
                   </View>
-                  {busy && <ActivityIndicator size="small" color="#4ade80" />}
+                  {busy && <ActivityIndicator size="small" color={brand.green} />}
                 </View>
                 <View style={styles.badgeRow}>
                   <LeadSourceBadge source={lead.source} />
@@ -412,52 +413,52 @@ function FilterChip({ label, active, onPress }: { label: string; active: boolean
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: brand.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2 },
   filterBar: { paddingHorizontal: 20, paddingBottom: 10, gap: 8 },
-  searchInput: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  searchInput: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: brand.ink, backgroundColor: '#fff' },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  toggleChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  toggleChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  toggleChipText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  toggleChipTextActive: { color: '#052e16' },
-  filtersBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  filtersBtnText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  filterPanel: { gap: 8, marginTop: 4, padding: 12, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb' },
-  filterGroupLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', marginTop: 4 },
+  toggleChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  toggleChipActive: { backgroundColor: brand.green, borderColor: brand.green },
+  toggleChipText: { fontSize: 12, fontWeight: '600', color: brand.text },
+  toggleChipTextActive: { color: brand.onGreen },
+  filtersBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  filtersBtnText: { fontSize: 12, fontWeight: '600', color: brand.text },
+  filterPanel: { gap: 8, marginTop: 4, padding: 12, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight },
+  filterGroupLabel: { fontSize: 11, fontWeight: '700', color: brand.muted, textTransform: 'uppercase', marginTop: 4 },
   chipScrollRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  filterChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  filterChipText: { fontSize: 12, color: '#374151', fontWeight: '500' },
-  filterChipTextActive: { color: '#052e16', fontWeight: '700' },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  filterChipActive: { backgroundColor: brand.green, borderColor: brand.green },
+  filterChipText: { fontSize: 12, color: brand.text, fontWeight: '500' },
+  filterChipTextActive: { color: brand.onGreen, fontWeight: '700' },
   listContent: { padding: 16, gap: 12 },
   loadingMore: { paddingVertical: 20, alignItems: 'center' },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  emptySubtitle: { fontSize: 12, color: '#9ca3af', marginTop: 4 },
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, padding: 14, marginBottom: 12 },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: brand.textMuted },
+  emptySubtitle: { fontSize: 12, color: brand.faint, marginTop: 4 },
+  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 14, padding: 14, marginBottom: 12 },
   cardLocked: { opacity: 0.6 },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   lockIcon: { fontSize: 12 },
-  leadName: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  mineTag: { fontSize: 11, color: '#047857', backgroundColor: '#d1fae5', alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 4 },
-  leadPhone: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  leadAddress: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  lockedText: { fontSize: 11, color: '#b45309', marginTop: 2 },
+  leadName: { fontSize: 15, fontWeight: '600', color: brand.ink },
+  mineTag: { fontSize: 11, color: brand.greenDark, backgroundColor: brand.greenSoft, alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 4 },
+  leadPhone: { fontSize: 13, color: brand.muted, marginTop: 4 },
+  leadAddress: { fontSize: 13, color: brand.muted, marginTop: 2 },
+  lockedText: { fontSize: 11, color: brand.warning, marginTop: 2 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   execRow: { marginTop: 10, gap: 6 },
-  execLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  execLabel: { fontSize: 12, fontWeight: '600', color: brand.muted },
   actionsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  assignBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: '#d1fae5', borderWidth: 1, borderColor: '#a7f3d0' },
-  assignBtnText: { fontSize: 12, fontWeight: '600', color: '#047857' },
-  unlockBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: '#fef3c7', borderWidth: 1, borderColor: '#fde68a' },
-  unlockBtnText: { fontSize: 12, fontWeight: '600', color: '#b45309' },
+  assignBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: brand.greenSoft, borderWidth: 1, borderColor: brand.greenBorder },
+  assignBtnText: { fontSize: 12, fontWeight: '600', color: brand.greenDark },
+  unlockBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: brand.warningSoft, borderWidth: 1, borderColor: brand.warningBorder },
+  unlockBtnText: { fontSize: 12, fontWeight: '600', color: brand.warning },
   detailWrap: { padding: 16 },
   detailHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
-  detailName: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  detailPhone: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  detailName: { fontSize: 18, fontWeight: '700', color: brand.ink },
+  detailPhone: { fontSize: 13, color: brand.muted, marginTop: 2 },
 })

@@ -16,6 +16,7 @@ import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import BackButton from '@/components/BackButton'
 import type { Lead, LeadStage } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const STAGE_OPTIONS: { value: LeadStage; label: string }[] = [
   { value: 'new', label: 'New' },
@@ -57,7 +58,7 @@ export default function LeadsScreen() {
         value={search}
         onChangeText={setSearch}
         placeholder="Search by name or phone…"
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={brand.faint}
       />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
@@ -69,7 +70,7 @@ export default function LeadsScreen() {
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#4ade80" />
+          <ActivityIndicator size="large" color={brand.green} />
         </View>
       ) : (
         <FlatList
@@ -80,7 +81,7 @@ export default function LeadsScreen() {
           onEndReachedThreshold={0.5}
           refreshing={isRefetching}
           onRefresh={() => { refetch() }}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator size="small" color="#4ade80" style={{ marginVertical: 16 }} /> : undefined}
+          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator size="small" color={brand.green} style={{ marginVertical: 16 }} /> : undefined}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No leads found</Text>
@@ -120,25 +121,25 @@ function FilterChip({ label, active, onPress }: { label: string; active: boolean
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb', paddingHorizontal: 20 },
+  safe: { flex: 1, backgroundColor: brand.bg, paddingHorizontal: 20 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { marginBottom: 12 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  searchInput: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#111827', backgroundColor: '#fff', marginBottom: 10 },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2 },
+  searchInput: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: brand.ink, backgroundColor: '#fff', marginBottom: 10 },
   chipRow: { flexDirection: 'row', gap: 8, paddingBottom: 12 },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  filterChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  filterChipText: { fontSize: 12, color: '#374151', fontWeight: '500' },
-  filterChipTextActive: { color: '#052e16', fontWeight: '700' },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  filterChipActive: { backgroundColor: brand.green, borderColor: brand.green },
+  filterChipText: { fontSize: 12, color: brand.text, fontWeight: '500' },
+  filterChipTextActive: { color: brand.onGreen, fontWeight: '700' },
   listContent: { paddingBottom: 24, gap: 12 },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  emptySubtitle: { fontSize: 12, color: '#9ca3af', marginTop: 4 },
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, padding: 14 },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: brand.textMuted },
+  emptySubtitle: { fontSize: 12, color: brand.faint, marginTop: 4 },
+  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 14, padding: 14 },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  leadName: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  leadPhone: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  leadAddress: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  leadName: { fontSize: 15, fontWeight: '600', color: brand.ink },
+  leadPhone: { fontSize: 13, color: brand.muted, marginTop: 4 },
+  leadAddress: { fontSize: 13, color: brand.muted, marginTop: 2 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
 })

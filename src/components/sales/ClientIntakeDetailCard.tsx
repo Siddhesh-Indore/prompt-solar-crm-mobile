@@ -13,6 +13,7 @@ import {
   ROOF_TYPE_LABEL, PANEL_COMPANY_LABEL, INVERTER_LABEL, STRUCTURE_LABEL,
   CUSTOMER_TYPE_LABEL, ADVANCE_MODE_LABEL, DOC_FIELDS, SCOPE_FIELDS, NAME_CHANGE_DOC_FIELDS,
 } from './intakeFields'
+import { brand } from '@/constants/brand'
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -112,7 +113,7 @@ export default function ClientIntakeDetailCard({ f }: { f: ClientIntakeFormWithR
               <Text style={styles.actionBtnText}>📍 Share Location</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn} onPress={sharePhotos} disabled={sharingPhotos}>
-              {sharingPhotos ? <ActivityIndicator size="small" color="#374151" /> : <Text style={styles.actionBtnText}>📤 Share Photos</Text>}
+              {sharingPhotos ? <ActivityIndicator size="small" color={brand.text} /> : <Text style={styles.actionBtnText}>📤 Share Photos</Text>}
             </TouchableOpacity>
           </View>
 
@@ -194,27 +195,27 @@ export default function ClientIntakeDetailCard({ f }: { f: ClientIntakeFormWithR
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, marginBottom: 10, overflow: 'hidden' },
+  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 14, marginBottom: 10, overflow: 'hidden' },
   header: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  name: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  badge: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#bbf7d0', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 10, fontWeight: '700', color: '#15803d' },
-  meta: { fontSize: 12, color: '#6b7280', marginTop: 4 },
-  metaSub: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-  chevron: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  body: { borderTopWidth: 1, borderTopColor: '#f3f4f6', padding: 14, gap: 4 },
+  name: { fontSize: 15, fontWeight: '600', color: brand.ink },
+  badge: { backgroundColor: brand.greenTint, borderWidth: 1, borderColor: brand.greenBorder, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeText: { fontSize: 10, fontWeight: '700', color: brand.greenDark },
+  meta: { fontSize: 12, color: brand.muted, marginTop: 4 },
+  metaSub: { fontSize: 11, color: brand.faint, marginTop: 2 },
+  chevron: { fontSize: 12, color: brand.faint, marginTop: 2 },
+  body: { borderTopWidth: 1, borderTopColor: brand.surfaceAlt, padding: 14, gap: 4 },
   actionsRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  actionBtn: { flex: 1, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, paddingVertical: 9, alignItems: 'center', backgroundColor: '#f9fafb' },
-  actionBtnText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  sectionTitle: { fontSize: 11, fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 6 },
+  actionBtn: { flex: 1, borderWidth: 1, borderColor: brand.borderLight, borderRadius: 10, paddingVertical: 9, alignItems: 'center', backgroundColor: brand.bg },
+  actionBtnText: { fontSize: 12, fontWeight: '600', color: brand.text },
+  sectionTitle: { fontSize: 11, fontWeight: '700', color: brand.faint, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 6 },
   field: { marginBottom: 8 },
-  fieldLabel: { fontSize: 11, color: '#9ca3af' },
-  fieldValue: { fontSize: 13, color: '#1f2937', marginTop: 1 },
+  fieldLabel: { fontSize: 11, color: brand.faint },
+  fieldValue: { fontSize: 13, color: brand.ink, marginTop: 1 },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
-  chip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb' },
-  chipDone: { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' },
-  chipText: { fontSize: 10, fontWeight: '600', color: '#9ca3af' },
-  chipTextDone: { color: '#15803d' },
+  chip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: brand.borderLight, backgroundColor: brand.bg },
+  chipDone: { backgroundColor: brand.greenTint, borderColor: brand.greenBorder },
+  chipText: { fontSize: 10, fontWeight: '600', color: brand.faint },
+  chipTextDone: { color: brand.greenDark },
 })

@@ -15,11 +15,14 @@ import { useAuth } from '@/context/AuthContext'
 import { useCreateVisitReport, useVisitReports, type NewVisitReportInput } from '@/hooks/useVisitReports'
 import { useUpdateLead } from '@/hooks/useLeadMutations'
 import { uploadVisitPhoto } from '@/lib/uploadVisitPhoto'
+import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 import ChipSelect from '@/components/sales/ChipSelect'
+import PreviousNotes from '@/components/sales/PreviousNotes'
 import DateTimeField from '@/components/sales/DateTimeField'
 import FollowUpSetter from '@/components/sales/FollowUpSetter'
 import LocationPhotoCapture, { type LocationPhotoValue } from '@/components/sales/LocationPhotoCapture'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const OUTCOME_OPTIONS: { value: NonNullable<NewVisitReportInput['outcome']>; label: string }[] = [
   { value: 'finalized', label: 'Finalized' },
@@ -114,6 +117,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         photo_url: photoPath,
       })
 
+      hapticSuccess()
       if (outcome === 'second_visit' || (outcome === 'follow_up' && nextVisitPlanned)) {
         // The next visit itself is the plan — schedule it directly rather
         // than also opening FollowUpSetter for a separate reminder.
@@ -133,6 +137,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         onDone()
       }
     } catch (err) {
+      hapticWarning()
       setError(err instanceof Error ? err.message : 'Failed to save visit report')
     } finally {
       setSubmitting(false)
@@ -195,19 +200,21 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
       <View style={styles.row2}>
         <View style={styles.col}>
           <Field label="kW Interest">
-            <TextInput style={styles.input} value={kwInterest} onChangeText={setKwInterest} keyboardType="numeric" placeholder="e.g. 5" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={kwInterest} onChangeText={setKwInterest} keyboardType="numeric" placeholder="e.g. 5" placeholderTextColor={brand.faint} />
           </Field>
         </View>
         <View style={styles.col}>
           <Field label="Quote Discussed (₹)">
-            <TextInput style={styles.input} value={quoteDiscussed} onChangeText={setQuoteDiscussed} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={quoteDiscussed} onChangeText={setQuoteDiscussed} keyboardType="numeric" placeholderTextColor={brand.faint} />
           </Field>
         </View>
       </View>
 
       <Field label="Next Step">
-        <TextInput style={styles.input} value={nextStep} onChangeText={setNextStep} placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={nextStep} onChangeText={setNextStep} placeholderTextColor={brand.faint} />
       </Field>
+
+      <PreviousNotes lead={lead} visits={existingVisits} />
 
       <Field label="Notes">
         <TextInput
@@ -217,7 +224,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
           multiline
           numberOfLines={3}
           placeholder="Visit notes…"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={brand.faint}
         />
       </Field>
 
@@ -228,7 +235,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
           </TouchableOpacity>
         )}
         <TouchableOpacity style={[styles.primaryBtn, submitting && styles.btnDisabled]} onPress={submit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#052e16" /> : <Text style={styles.primaryBtnText}>Save Visit Report</Text>}
+          {submitting ? <ActivityIndicator color={brand.onGreen} /> : <Text style={styles.primaryBtnText}>Save Visit Report</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -247,18 +254,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const styles = StyleSheet.create({
   form: { gap: 4 },
   field: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: brand.ink, backgroundColor: '#fff' },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
   row2: { flexDirection: 'row', gap: 12, marginBottom: 14 },
   col: { flex: 1 },
-  hint: { fontSize: 12, color: '#9ca3af', marginTop: -8, marginBottom: 14 },
-  errorBox: { backgroundColor: '#fee2e2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 10, marginBottom: 14 },
-  errorText: { color: '#b91c1c', fontSize: 12 },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  primaryBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, backgroundColor: '#4ade80', alignItems: 'center', justifyContent: 'center', minWidth: 160 },
+  hint: { fontSize: 12, color: brand.faint, marginTop: -8, marginBottom: 14 },
+  errorBox: { backgroundColor: brand.dangerSoft, borderWidth: 1, borderColor: brand.dangerBorder, borderRadius: 10, padding: 10, marginBottom: 14 },
+  errorText: { color: brand.danger, fontSize: 12 },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: brand.surfaceAlt },
+  primaryBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, backgroundColor: brand.green, alignItems: 'center', justifyContent: 'center', minWidth: 160 },
   btnDisabled: { opacity: 0.6 },
-  primaryBtnText: { fontSize: 13, color: '#052e16', fontWeight: '700' },
-  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
-  secondaryBtnText: { fontSize: 13, color: '#374151', fontWeight: '600' },
+  primaryBtnText: { fontSize: 13, color: brand.onGreen, fontWeight: '700' },
+  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: brand.border, alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { fontSize: 13, color: brand.text, fontWeight: '600' },
 })

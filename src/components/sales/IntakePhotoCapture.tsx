@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { uploadIntakePhoto } from '@/lib/uploadIntakePhoto'
+import { brand } from '@/constants/brand'
 
 export const MIN_INTAKE_PHOTOS = 1
 
@@ -109,7 +110,7 @@ export default function IntakePhotoCapture({ execId, leadId, photos, onChange }:
         ))}
 
         <TouchableOpacity style={styles.addTile} onPress={() => addPhoto('camera')} disabled={capturing}>
-          {capturing ? <ActivityIndicator size="small" color="#6b7280" /> : <Text style={styles.addTileText}>📷{'\n'}Add Photo</Text>}
+          {capturing ? <ActivityIndicator size="small" color={brand.muted} /> : <Text style={styles.addTileText}>📷{'\n'}Add Photo</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.addTile} onPress={() => addPhoto('gallery')} disabled={capturing}>
@@ -128,9 +129,9 @@ export default function IntakePhotoCapture({ execId, leadId, photos, onChange }:
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 2 },
-  required: { color: '#dc2626' },
-  hint: { fontSize: 11, color: '#9ca3af', marginBottom: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 2 },
+  required: { color: brand.danger },
+  hint: { fontSize: 11, color: brand.faint, marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   thumbWrap: { width: 84, height: 84, borderRadius: 10, overflow: 'hidden' },
   thumb: { width: '100%', height: '100%' },
@@ -141,12 +142,12 @@ const styles = StyleSheet.create({
   },
   removeBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
   addTile: {
-    width: 84, height: 84, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: '#d1d5db',
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb',
+    width: 84, height: 84, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: brand.border,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: brand.bg,
   },
-  addTileText: { fontSize: 11, color: '#6b7280', textAlign: 'center', fontWeight: '600' },
-  statusPill: { alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: '#f3f4f6' },
-  statusPillDone: { backgroundColor: '#f0fdf4' },
-  statusPillText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
-  statusPillTextDone: { color: '#15803d' },
+  addTileText: { fontSize: 11, color: brand.muted, textAlign: 'center', fontWeight: '600' },
+  statusPill: { alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: brand.surfaceAlt },
+  statusPillDone: { backgroundColor: brand.greenTint },
+  statusPillText: { fontSize: 11, fontWeight: '600', color: brand.muted },
+  statusPillTextDone: { color: brand.greenDark },
 })

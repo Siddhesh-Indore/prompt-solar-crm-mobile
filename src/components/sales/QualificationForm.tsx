@@ -30,6 +30,7 @@ import ExecAssignPicker from '@/components/sales/ExecAssignPicker'
 import ChipSelect from '@/components/sales/ChipSelect'
 import DateTimeField from '@/components/sales/DateTimeField'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const STATUS_OPTIONS = [
   { value: 'visit_fixed', label: 'Visit Fixed' },
@@ -269,7 +270,7 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
               value={callbackReason}
               onChangeText={setCallbackReason}
               placeholder={status === 'no_answer' ? 'e.g. phone kept ringing, no pickup' : 'e.g. asked to call after 6pm'}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
             />
           </Field>
         </>
@@ -288,18 +289,18 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
       </Field>
 
       <Field label="Monthly Bill (₹)">
-        <TextInput style={styles.input} value={billAmount} onChangeText={setBillAmount} keyboardType="numeric" placeholder="e.g. 3000" placeholderTextColor="#9ca3af" />
+        <TextInput style={styles.input} value={billAmount} onChangeText={setBillAmount} keyboardType="numeric" placeholder="e.g. 3000" placeholderTextColor={brand.faint} />
       </Field>
 
       <View style={styles.row2}>
         <View style={styles.col}>
           <Field label="Quote Min (₹)">
-            <TextInput style={styles.input} value={quoteMin} onChangeText={setQuoteMin} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={quoteMin} onChangeText={setQuoteMin} keyboardType="numeric" placeholderTextColor={brand.faint} />
           </Field>
         </View>
         <View style={styles.col}>
           <Field label="Quote Max (₹)">
-            <TextInput style={styles.input} value={quoteMax} onChangeText={setQuoteMax} keyboardType="numeric" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={quoteMax} onChangeText={setQuoteMax} keyboardType="numeric" placeholderTextColor={brand.faint} />
           </Field>
         </View>
       </View>
@@ -315,7 +316,7 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
           value={notes}
           onChangeText={setNotes}
           placeholder="Call notes…"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={brand.faint}
           multiline
           numberOfLines={3}
         />
@@ -326,7 +327,7 @@ export default function QualificationForm({ lead, onDone }: QualificationFormPro
           <Text style={styles.secondaryBtnText}>Release Lead</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.primaryBtn, submitting && styles.btnDisabled]} onPress={onSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#052e16" /> : <Text style={styles.primaryBtnText}>Save</Text>}
+          {submitting ? <ActivityIndicator color={brand.onGreen} /> : <Text style={styles.primaryBtnText}>Save</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -345,19 +346,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const styles = StyleSheet.create({
   form: { gap: 4 },
   field: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: brand.ink, backgroundColor: '#fff' },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
   row2: { flexDirection: 'row', gap: 12 },
   col: { flex: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  switchLabel: { fontSize: 13, color: '#374151', flexShrink: 1 },
-  errorBox: { backgroundColor: '#fee2e2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 10, marginBottom: 14 },
-  errorText: { color: '#b91c1c', fontSize: 12 },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: '#d1d5db' },
-  secondaryBtnText: { fontSize: 13, color: '#374151', fontWeight: '600' },
-  primaryBtn: { paddingHorizontal: 20, paddingVertical: 11, borderRadius: 10, backgroundColor: '#4ade80', alignItems: 'center', justifyContent: 'center', minWidth: 80 },
+  switchLabel: { fontSize: 13, color: brand.text, flexShrink: 1 },
+  errorBox: { backgroundColor: brand.dangerSoft, borderWidth: 1, borderColor: brand.dangerBorder, borderRadius: 10, padding: 10, marginBottom: 14 },
+  errorText: { color: brand.danger, fontSize: 12 },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: brand.surfaceAlt },
+  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: brand.border },
+  secondaryBtnText: { fontSize: 13, color: brand.text, fontWeight: '600' },
+  primaryBtn: { paddingHorizontal: 20, paddingVertical: 11, borderRadius: 10, backgroundColor: brand.green, alignItems: 'center', justifyContent: 'center', minWidth: 80 },
   btnDisabled: { opacity: 0.6 },
-  primaryBtnText: { fontSize: 13, color: '#052e16', fontWeight: '700' },
+  primaryBtnText: { fontSize: 13, color: brand.onGreen, fontWeight: '700' },
 })

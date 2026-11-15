@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
+import { brand } from '@/constants/brand'
 
 interface DateTimeFieldProps {
   label: string
@@ -120,11 +121,11 @@ export default function DateTimeField({ label, value, onChange, mode, placeholde
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
   field: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14,
+    borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14,
     paddingVertical: 12, backgroundColor: '#fff', minHeight: 44, justifyContent: 'center',
   },
-  value: { fontSize: 14, color: '#111827' },
-  placeholder: { fontSize: 14, color: '#9ca3af' },
+  value: { fontSize: 14, color: brand.ink },
+  placeholder: { fontSize: 14, color: brand.faint },
 })

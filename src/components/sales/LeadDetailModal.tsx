@@ -10,6 +10,7 @@ import TemperatureBadge from '@/components/sales/badges/TemperatureBadge'
 import SendBackBadge from '@/components/sales/badges/SendBackBadge'
 import CallVisitHistory from '@/components/sales/CallVisitHistory'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 function formatDate(d: string | null) {
   if (!d) return '—'
@@ -113,7 +114,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: brand.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
   closeBtn: {
     alignSelf: 'flex-start',
@@ -121,19 +122,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: brand.border,
     backgroundColor: '#fff',
   },
-  closeBtnText: { fontSize: 15, color: '#111827', fontWeight: '700' },
+  closeBtnText: { fontSize: 15, color: brand.ink, fontWeight: '700' },
   content: { padding: 20, paddingTop: 8 },
-  name: { fontSize: 22, fontWeight: '700', color: '#111827' },
-  phone: { fontSize: 14, color: '#047857', fontWeight: '600', marginTop: 4 },
+  name: { fontSize: 22, fontWeight: '700', color: brand.ink },
+  phone: { fontSize: 14, color: brand.greenDark, fontWeight: '600', marginTop: 4 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   section: { marginTop: 20 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  sectionCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 14, gap: 10 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: brand.faint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  sectionCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 12, padding: 14, gap: 10 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  rowLabel: { fontSize: 13, color: '#6b7280', flexShrink: 0 },
-  rowValue: { fontSize: 13, color: '#111827', fontWeight: '600', flexShrink: 1, textAlign: 'right' },
-  notes: { fontSize: 13, color: '#374151', lineHeight: 19 },
+  rowLabel: { fontSize: 13, color: brand.muted, flexShrink: 0 },
+  rowValue: { fontSize: 13, color: brand.ink, fontWeight: '600', flexShrink: 1, textAlign: 'right' },
+  notes: { fontSize: 13, color: brand.text, lineHeight: 19 },
 })

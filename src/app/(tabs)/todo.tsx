@@ -8,7 +8,7 @@
 // cards as on the Visits tab, so a visit can be called, recorded or sent back
 // from here.
 import { useMemo, useState } from 'react'
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl, Alert, Linking } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, RefreshControl, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLeads } from '@/hooks/useLeads'
 import { useAuth } from '@/context/AuthContext'
@@ -19,6 +19,8 @@ import { localDateKey, daysUntil } from '@/lib/visitBoard'
 import FollowUpSetter from '@/components/sales/FollowUpSetter'
 import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
+import { SkeletonList } from '@/components/ui/Skeleton'
 
 type TodoItem =
   | { kind: 'visit'; sortKey: string; lead: Lead }
@@ -67,6 +69,9 @@ function dayTitle(dateKey: string): string {
   const diff = daysUntil(dateKey)
   return diff === 1 ? `Tomorrow · ${formatDate(dateKey)}` : formatDate(dateKey)
 }
+
+// Same status colours as the rest of the app: overdue red, today navy, later grey.
+const DUE_COLOR = { overdue: brand.danger, today: brand.navy, upcoming: brand.muted } as const
 
 function formatDate(dateKey: string): string {
   return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
@@ -126,7 +131,7 @@ function FollowUpCard({ item, onDone }: { item: Extract<TodoItem, { kind: 'follo
           <TouchableOpacity onPress={() => Linking.openURL(`tel:${item.leadPhone}`)}>
             <Text style={styles.leadPhone}>📞 {item.leadPhone}</Text>
           </TouchableOpacity>
-          <Text style={styles.dueText}>Due {new Date(item.dueAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</Text>
+          <Text style={[styles.dueText, { color: DUE_COLOR[bucketOf(dateKeyOf(item.dueAt))] }]}>Due {new Date(item.dueAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</Text>
           {item.reason && <Text style={styles.reasonText}>{item.reason}</Text>}
         </View>
       </View>
@@ -205,10 +210,10 @@ export default function TodoScreen() {
     upcomingByDay.set(key, [...(upcomingByDay.get(key) ?? []), item])
   }
 
-  const sections: { title: string; data: TodoItem[] }[] = [
-    { title: `Today (${today.length})`, data: today },
-    { title: `Overdue (${overdue.length})`, data: overdue },
-    ...[...upcomingByDay.entries()].map(([key, data]) => ({ title: `${dayTitle(key)} (${data.length})`, data })),
+  const sections: { title: string; tone: 'overdue' | 'today' | 'upcoming'; data: TodoItem[] }[] = [
+    { title: `Today (${today.length})`, tone: 'today' as const, data: today },
+    { title: `Overdue (${overdue.length})`, tone: 'overdue' as const, data: overdue },
+    ...[...upcomingByDay.entries()].map(([key, data]) => ({ title: `${dayTitle(key)} (${data.length})`, tone: 'upcoming' as const, data })),
   ].filter((s) => s.data.length > 0)
 
   return (
@@ -230,9 +235,7 @@ export default function TodoScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#4ade80" />
-        </View>
+        <SkeletonList />
       ) : (
         <FlatList
           data={sections}
@@ -251,7 +254,7 @@ export default function TodoScreen() {
           }
           renderItem={({ item: section }) => (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Text style={[styles.sectionTitle, { color: DUE_COLOR[section.tone] }]}>{section.title}</Text>
               {section.data.map((item) =>
                 item.kind === 'visit' ? (
                   <SharedVisitCard key={`visit-${item.lead.id}`} lead={item.lead} onDone={refetchAll} onOpenDetail={() => setDetailLead(item.lead)} canManage />
@@ -270,33 +273,33 @@ export default function TodoScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: brand.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2 },
   rangeRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 6 },
-  rangeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  rangeChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  rangeChipText: { fontSize: 13, fontWeight: '500', color: '#374151' },
-  rangeChipTextActive: { color: '#052e16', fontWeight: '700' },
+  rangeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  rangeChipActive: { backgroundColor: brand.green, borderColor: brand.green },
+  rangeChipText: { fontSize: 13, fontWeight: '500', color: brand.text },
+  rangeChipTextActive: { color: brand.onGreen, fontWeight: '700' },
   listContent: { padding: 16, gap: 4 },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  emptySubtitle: { fontSize: 12, color: '#9ca3af', marginTop: 4, textAlign: 'center', paddingHorizontal: 30 },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: brand.textMuted },
+  emptySubtitle: { fontSize: 12, color: brand.faint, marginTop: 4, textAlign: 'center', paddingHorizontal: 30 },
   section: { marginBottom: 8 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 8 },
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, padding: 14, marginBottom: 10 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: brand.faint, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 8 },
+  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: brand.borderLight, borderRadius: 14, padding: 14, marginBottom: 10 },
   cardTop: { flexDirection: 'row' },
   kindRow: { flexDirection: 'row', marginBottom: 4 },
-  kindTag: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
-  leadName: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  leadPhone: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  dueText: { fontSize: 12, color: '#b45309', marginTop: 4, fontWeight: '600' },
-  reasonText: { fontSize: 12, color: '#6b7280', marginTop: 4, fontStyle: 'italic' },
+  kindTag: { fontSize: 11, fontWeight: '600', color: brand.muted },
+  leadName: { fontSize: 15, fontWeight: '600', color: brand.ink },
+  leadPhone: { fontSize: 13, color: brand.muted, marginTop: 2 },
+  dueText: { fontSize: 12, color: brand.warning, marginTop: 4, fontWeight: '600' },
+  reasonText: { fontSize: 12, color: brand.muted, marginTop: 4, fontStyle: 'italic' },
   actionsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  secondaryBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center' },
-  secondaryBtnText: { fontSize: 12, fontWeight: '600', color: '#374151' },
-  primaryBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, backgroundColor: '#4ade80', alignItems: 'center' },
-  primaryBtnText: { fontSize: 12, fontWeight: '700', color: '#052e16' },
+  secondaryBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: brand.border, alignItems: 'center' },
+  secondaryBtnText: { fontSize: 12, fontWeight: '600', color: brand.text },
+  primaryBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, backgroundColor: brand.green, alignItems: 'center' },
+  primaryBtnText: { fontSize: 12, fontWeight: '700', color: brand.onGreen },
 })

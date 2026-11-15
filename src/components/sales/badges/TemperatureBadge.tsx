@@ -1,11 +1,12 @@
 // src/components/sales/badges/TemperatureBadge.tsx
 import { View, Text, StyleSheet } from 'react-native'
 import type { LeadTemperature } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const TEMP_LABEL: Record<LeadTemperature, string> = { hot: '🔥 Hot', warm: '🔥 Warm', cold: '🔥 Cold' }
 
 const TEMP_COLORS: Record<LeadTemperature, { bg: string; text: string; border: string }> = {
-  hot: { bg: '#fee2e2', text: '#b91c1c', border: '#fecaca' },
+  hot: { bg: brand.dangerSoft, text: brand.danger, border: brand.dangerBorder },
   warm: { bg: '#ffedd5', text: '#c2410c', border: '#fed7aa' },
   cold: { bg: '#e0f2fe', text: '#0369a1', border: '#bae6fd' },
 }
@@ -23,5 +24,5 @@ export default function TemperatureBadge({ temperature }: { temperature: LeadTem
 const styles = StyleSheet.create({
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
   text: { fontSize: 11, fontWeight: '600' },
-  dash: { fontSize: 12, color: '#9ca3af' },
+  dash: { fontSize: 12, color: brand.faint },
 })

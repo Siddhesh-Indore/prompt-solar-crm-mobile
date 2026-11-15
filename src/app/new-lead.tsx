@@ -12,8 +12,10 @@ import { useRouter } from 'expo-router'
 import { useCreateLead, findDuplicateLeadsByPhone, type DuplicateLead } from '@/hooks/useLeadMutations'
 import BackButton from '@/components/BackButton'
 import ChipSelect from '@/components/sales/ChipSelect'
+import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 import StageBadge from '@/components/sales/badges/StageBadge'
 import type { LeadSource } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 // Sources an exec can plausibly tag a lead they found themselves with.
 const SOURCE_OPTIONS: { value: LeadSource; label: string }[] = [
@@ -78,10 +80,12 @@ export default function NewLeadScreen() {
         source,
         notes: notes.trim() || undefined,
       })
+      hapticSuccess()
       Alert.alert('Lead created', `${name.trim()} was added to your Visits as a first visit.`, [
         { text: 'OK', onPress: () => router.back() },
       ])
     } catch (err) {
+      hapticWarning()
       setError(err instanceof Error ? err.message : 'Failed to create lead')
     }
   }
@@ -113,7 +117,7 @@ export default function NewLeadScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>Name <Text style={styles.required}>*</Text></Text>
-            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Suresh Patil" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Suresh Patil" placeholderTextColor={brand.faint} />
           </View>
 
           <View style={styles.field}>
@@ -123,7 +127,7 @@ export default function NewLeadScreen() {
               value={phone}
               onChangeText={onPhoneChange}
               placeholder="10-digit mobile number"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
               keyboardType="phone-pad"
               maxLength={10}
             />
@@ -132,7 +136,7 @@ export default function NewLeadScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>Address</Text>
-            <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholder="Site address / village" placeholderTextColor="#9ca3af" />
+            <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholder="Site address / village" placeholderTextColor={brand.faint} />
           </View>
 
           <View style={styles.field}>
@@ -147,7 +151,7 @@ export default function NewLeadScreen() {
               value={notes}
               onChangeText={setNotes}
               placeholder="Optional"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
               multiline
               textAlignVertical="top"
             />
@@ -158,7 +162,7 @@ export default function NewLeadScreen() {
             onPress={submit}
             disabled={blocked || createLead.isPending}
           >
-            {createLead.isPending ? <ActivityIndicator size="small" color="#052e16" /> : <Text style={styles.submitBtnText}>Create Lead</Text>}
+            {createLead.isPending ? <ActivityIndicator size="small" color={brand.onGreen} /> : <Text style={styles.submitBtnText}>Create Lead</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -167,23 +171,23 @@ export default function NewLeadScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: brand.bg },
   content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2, marginBottom: 16 },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2, marginBottom: 16 },
   field: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  required: { color: '#dc2626' },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
+  required: { color: brand.danger },
+  input: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: brand.ink, backgroundColor: '#fff' },
   inputBlocked: { borderColor: '#f59e0b' },
-  hint: { fontSize: 11, color: '#9ca3af', marginTop: 4 },
-  error: { fontSize: 12, color: '#dc2626', backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 10, marginBottom: 14 },
-  dupBox: { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a', borderRadius: 12, padding: 12, marginBottom: 14, gap: 8 },
-  dupTitle: { fontSize: 13, fontWeight: '700', color: '#b45309' },
+  hint: { fontSize: 11, color: brand.faint, marginTop: 4 },
+  error: { fontSize: 12, color: brand.danger, backgroundColor: brand.dangerSoft, borderWidth: 1, borderColor: brand.dangerBorder, borderRadius: 10, padding: 10, marginBottom: 14 },
+  dupBox: { backgroundColor: brand.warningSoft, borderWidth: 1, borderColor: brand.warningBorder, borderRadius: 12, padding: 12, marginBottom: 14, gap: 8 },
+  dupTitle: { fontSize: 13, fontWeight: '700', color: brand.warning },
   dupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  dupName: { fontSize: 13, color: '#111827', fontWeight: '600', flexShrink: 1 },
+  dupName: { fontSize: 13, color: brand.ink, fontWeight: '600', flexShrink: 1 },
   dupHint: { fontSize: 11, color: '#92400e' },
-  submitBtn: { marginTop: 6, paddingVertical: 14, borderRadius: 12, backgroundColor: '#4ade80', alignItems: 'center' },
+  submitBtn: { marginTop: 6, paddingVertical: 14, borderRadius: 12, backgroundColor: brand.green, alignItems: 'center' },
   submitBtnDisabled: { opacity: 0.5 },
-  submitBtnText: { fontSize: 14, fontWeight: '700', color: '#052e16' },
+  submitBtnText: { fontSize: 14, fontWeight: '700', color: brand.onGreen },
 })

@@ -6,6 +6,7 @@
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { useCaptureLocation } from '@/hooks/useCaptureLocation'
+import { brand } from '@/constants/brand'
 
 export interface LocationPhotoValue {
   latitude: number | null
@@ -91,7 +92,7 @@ export default function LocationPhotoCapture({ value, onChange, photoRequired = 
           disabled={locating}
         >
           {locating ? (
-            <ActivityIndicator size="small" color="#6b7280" />
+            <ActivityIndicator size="small" color={brand.muted} />
           ) : (
             <Text style={[styles.buttonText, hasLocation && styles.buttonTextDone]}>
               {hasLocation
@@ -121,18 +122,18 @@ export default function LocationPhotoCapture({ value, onChange, photoRequired = 
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 2 },
-  required: { color: '#dc2626' },
-  optionalNote: { color: '#9ca3af', fontWeight: '400' },
-  hint: { fontSize: 11, color: '#9ca3af', marginBottom: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 2 },
+  required: { color: brand.danger },
+  optionalNote: { color: brand.faint, fontWeight: '400' },
+  hint: { fontSize: 11, color: brand.faint, marginBottom: 8 },
   button: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingVertical: 12,
+    borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingVertical: 12,
     alignItems: 'center', backgroundColor: '#fff', marginBottom: 8,
   },
-  buttonDone: { borderColor: '#4ade80', backgroundColor: '#f0fdf4' },
-  buttonText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  buttonTextDone: { color: '#047857' },
+  buttonDone: { borderColor: brand.green, backgroundColor: brand.greenTint },
+  buttonText: { fontSize: 13, fontWeight: '600', color: brand.text },
+  buttonTextDone: { color: brand.greenDark },
   galleryLink: { alignItems: 'center', paddingVertical: 6, marginBottom: 4 },
-  galleryLinkText: { fontSize: 12, color: '#6b7280', textDecorationLine: 'underline' },
+  galleryLinkText: { fontSize: 12, color: brand.muted, textDecorationLine: 'underline' },
   preview: { width: '100%', height: 160, borderRadius: 10, marginTop: 4 },
 })

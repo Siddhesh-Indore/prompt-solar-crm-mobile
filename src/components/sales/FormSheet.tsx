@@ -11,6 +11,7 @@
 // lose what they typed.
 import { Modal, View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { brand } from '@/constants/brand'
 
 interface FormSheetProps {
   visible: boolean
@@ -41,8 +42,8 @@ export default function FormSheet({ visible, title, onClose, children }: FormShe
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   header: {
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: brand.borderLight,
   },
-  title: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  title: { fontSize: 15, fontWeight: '700', color: brand.ink },
   content: { padding: 16 },
 })

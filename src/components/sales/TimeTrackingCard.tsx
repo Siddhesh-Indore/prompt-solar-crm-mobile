@@ -5,9 +5,13 @@
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
+import { SkeletonBlock } from '@/components/ui/Skeleton'
 import { useTodayTimeLog, useClockIn, useClockOut, todayInIST } from '@/hooks/useTimeLogs'
 import { useAuth } from '@/context/AuthContext'
 import { uploadPhoto } from '@/lib/uploadPhoto'
+import { brand } from '@/constants/brand'
+import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 function formatTimeIST(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' })
@@ -47,7 +51,7 @@ export default function TimeTrackingCard() {
     setCapturing(true)
     try {
       const path = await takeSelfie('in')
-      if (path) clockIn.mutate(path)
+      if (path) clockIn.mutate(path, { onSuccess: hapticSuccess, onError: hapticWarning })
     } catch (err) {
       Alert.alert('Could not punch in', err instanceof Error ? err.message : 'Try again.')
     } finally {
@@ -59,7 +63,7 @@ export default function TimeTrackingCard() {
     setCapturing(true)
     try {
       const path = await takeSelfie('out')
-      if (path) clockOut.mutate({ id: logId, selfiePath: path })
+      if (path) clockOut.mutate({ id: logId, selfiePath: path }, { onSuccess: hapticSuccess, onError: hapticWarning })
     } catch (err) {
       Alert.alert('Could not punch out', err instanceof Error ? err.message : 'Try again.')
     } finally {
@@ -67,39 +71,42 @@ export default function TimeTrackingCard() {
     }
   }
 
+  const punchedIn = !!log && !log.clock_out_at
+  const done = !!log && !!log.clock_out_at
+
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Attendance</Text>
+      <View style={styles.row}>
+        <View style={[styles.iconWrap, done && styles.iconWrapDone]}>
+          <Ionicons name={done ? 'checkmark' : 'time-outline'} size={20} color={done ? brand.greenDark : brand.navy} />
+        </View>
 
-      {isLoading ? (
-        <ActivityIndicator size="small" color="#4ade80" style={{ marginTop: 8 }} />
-      ) : !log ? (
-        <>
-          <Text style={styles.subtitle}>You haven't punched in today. A selfie is required.</Text>
-          <TouchableOpacity
-            style={[styles.button, styles.clockInButton, busy && styles.buttonDisabled]}
-            onPress={punchIn}
-            disabled={busy}
-          >
-            {busy ? <ActivityIndicator size="small" color="#052e16" /> : <Text style={styles.clockInText}>Punch In</Text>}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Attendance</Text>
+          {isLoading ? (
+            <SkeletonBlock width={120} height={11} style={{ marginTop: 6 }} />
+          ) : !log ? (
+            <Text style={styles.subtitle}>Not punched in · selfie required</Text>
+          ) : punchedIn ? (
+            <Text style={styles.subtitle}>In since {formatTimeIST(log.clock_in_at)}</Text>
+          ) : (
+            <Text style={styles.subtitle}>
+              {formatTimeIST(log.clock_in_at)} – {formatTimeIST(log.clock_out_at!)} · {formatDuration(log.clock_in_at, log.clock_out_at!)}
+            </Text>
+          )}
+        </View>
+
+        {!isLoading && !log && (
+          <TouchableOpacity style={[styles.button, styles.clockInButton, busy && styles.buttonDisabled]} onPress={punchIn} disabled={busy}>
+            {busy ? <ActivityIndicator size="small" color={brand.onGreen} /> : <Text style={styles.clockInText}>Punch In</Text>}
           </TouchableOpacity>
-        </>
-      ) : !log.clock_out_at ? (
-        <>
-          <Text style={styles.subtitle}>Punched in at {formatTimeIST(log.clock_in_at)}</Text>
-          <TouchableOpacity
-            style={[styles.button, styles.clockOutButton, busy && styles.buttonDisabled]}
-            onPress={() => punchOut(log.id)}
-            disabled={busy}
-          >
-            {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.clockOutText}>Punch Out</Text>}
+        )}
+        {!isLoading && punchedIn && (
+          <TouchableOpacity style={[styles.button, styles.clockOutButton, busy && styles.buttonDisabled]} onPress={() => punchOut(log!.id)} disabled={busy}>
+            {busy ? <ActivityIndicator size="small" color={brand.danger} /> : <Text style={styles.clockOutText}>Punch Out</Text>}
           </TouchableOpacity>
-        </>
-      ) : (
-        <Text style={styles.subtitle}>
-          Today: {formatTimeIST(log.clock_in_at)} – {formatTimeIST(log.clock_out_at)} ({formatDuration(log.clock_in_at, log.clock_out_at)})
-        </Text>
-      )}
+        )}
+      </View>
 
       {(clockIn.isError || clockOut.isError) && (
         <Text style={styles.error}>
@@ -111,14 +118,17 @@ export default function TimeTrackingCard() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 12 },
-  title: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  button: { marginTop: 12, borderRadius: 10, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: brand.white, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: brand.borderLight },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: brand.navySoft, alignItems: 'center', justifyContent: 'center' },
+  iconWrapDone: { backgroundColor: brand.greenSoft },
+  title: { fontSize: 14, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 12, color: brand.muted, marginTop: 2 },
+  button: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, minWidth: 96, alignItems: 'center', justifyContent: 'center' },
   buttonDisabled: { opacity: 0.6 },
-  clockInButton: { backgroundColor: '#4ade80' },
-  clockInText: { fontSize: 13, fontWeight: '700', color: '#052e16' },
-  clockOutButton: { backgroundColor: '#dc2626' },
-  clockOutText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  error: { fontSize: 11, color: '#dc2626', marginTop: 8 },
+  clockInButton: { backgroundColor: brand.green },
+  clockInText: { fontSize: 13, fontWeight: '700', color: brand.onGreen },
+  clockOutButton: { backgroundColor: brand.dangerSoft },
+  clockOutText: { fontSize: 13, fontWeight: '700', color: brand.danger },
+  error: { fontSize: 11, color: brand.danger, marginTop: 8 },
 })

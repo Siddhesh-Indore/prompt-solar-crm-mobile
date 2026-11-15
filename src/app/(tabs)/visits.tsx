@@ -11,7 +11,7 @@
 // admin/manager.
 import { useMemo, useState } from 'react'
 import { useRouter } from 'expo-router'
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLeads } from '@/hooks/useLeads'
 import { useAuth } from '@/context/AuthContext'
@@ -19,6 +19,8 @@ import VisitCard from '@/components/sales/VisitCard'
 import VisitsBoard from '@/components/sales/VisitsBoard'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
+import { SkeletonList } from '@/components/ui/Skeleton'
 
 const VISIT_FILTERS_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
 
@@ -74,9 +76,7 @@ export default function VisitsScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#4ade80" />
-        </View>
+        <SkeletonList />
       ) : (
         <FlatList
           data={myVisits}
@@ -101,16 +101,16 @@ export default function VisitsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: brand.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  newLeadBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: '#4ade80' },
-  newLeadBtnText: { fontSize: 13, fontWeight: '700', color: '#052e16' },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  newLeadBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, backgroundColor: brand.green },
+  newLeadBtnText: { fontSize: 13, fontWeight: '700', color: brand.onGreen },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2 },
   listContent: { padding: 16, gap: 12 },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  emptySubtitle: { fontSize: 12, color: '#9ca3af', marginTop: 4, textAlign: 'center', paddingHorizontal: 30 },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: brand.textMuted },
+  emptySubtitle: { fontSize: 12, color: brand.faint, marginTop: 4, textAlign: 'center', paddingHorizontal: 30 },
 })

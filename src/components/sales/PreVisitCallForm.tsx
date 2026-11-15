@@ -9,6 +9,7 @@ import { useLogCall } from '@/hooks/useCallLogs'
 import { useUpdateLead } from '@/hooks/useLeadMutations'
 import DateTimeField from '@/components/sales/DateTimeField'
 import type { Lead } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 interface PreVisitCallFormProps {
   lead: Lead
@@ -113,7 +114,7 @@ export default function PreVisitCallForm({ lead, onDone, onCancel }: PreVisitCal
           multiline
           numberOfLines={2}
           placeholder={rescheduling ? 'Why the customer postponed…' : 'Anything worth noting…'}
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={brand.faint}
         />
       </View>
 
@@ -122,7 +123,7 @@ export default function PreVisitCallForm({ lead, onDone, onCancel }: PreVisitCal
           <Text style={styles.secondaryBtnText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.btn, submitting && styles.btnDisabled]} onPress={submit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#052e16" /> : <Text style={styles.btnText}>{rescheduling ? 'Save & Reschedule' : 'Log Call'}</Text>}
+          {submitting ? <ActivityIndicator color={brand.onGreen} /> : <Text style={styles.btnText}>{rescheduling ? 'Save & Reschedule' : 'Log Call'}</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -130,24 +131,24 @@ export default function PreVisitCallForm({ lead, onDone, onCancel }: PreVisitCal
 }
 
 const styles = StyleSheet.create({
-  wrap: { backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 14 },
+  wrap: { backgroundColor: brand.bg, borderWidth: 1, borderColor: brand.borderLight, borderRadius: 12, padding: 14 },
   toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  toggleBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  toggleText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  toggleTextActive: { color: '#052e16' },
+  toggleBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: brand.border, alignItems: 'center' },
+  toggleBtnActive: { backgroundColor: brand.green, borderColor: brand.green },
+  toggleText: { fontSize: 12, fontWeight: '600', color: brand.muted },
+  toggleTextActive: { color: brand.onGreen },
   row2: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   col: { flex: 1 },
   field: { marginBottom: 12 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: brand.ink, backgroundColor: '#fff' },
   textarea: { minHeight: 60, textAlignVertical: 'top' },
-  errorBox: { backgroundColor: '#fee2e2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 10, marginBottom: 8 },
-  errorText: { color: '#b91c1c', fontSize: 12 },
+  errorBox: { backgroundColor: brand.dangerSoft, borderWidth: 1, borderColor: brand.dangerBorder, borderRadius: 10, padding: 10, marginBottom: 8 },
+  errorText: { color: brand.danger, fontSize: 12 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 4 },
-  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
-  secondaryBtnText: { fontSize: 13, color: '#374151', fontWeight: '600' },
-  btn: { backgroundColor: '#4ade80', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', minWidth: 150 },
+  secondaryBtn: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: brand.border, alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { fontSize: 13, color: brand.text, fontWeight: '600' },
+  btn: { backgroundColor: brand.green, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', minWidth: 150 },
   btnDisabled: { opacity: 0.6 },
-  btnText: { fontSize: 13, color: '#052e16', fontWeight: '700' },
+  btnText: { fontSize: 13, color: brand.onGreen, fontWeight: '700' },
 })

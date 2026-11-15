@@ -1,6 +1,7 @@
 // src/components/sales/ChipSelect.tsx
 // Single-select chip row — the mobile stand-in for a web <select>.
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { brand } from '@/constants/brand'
 
 interface Option<T extends string> {
   value: T
@@ -34,8 +35,8 @@ export default function ChipSelect<T extends string>({ options, value, onChange 
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  chipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  chipText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  chipTextActive: { color: '#052e16', fontWeight: '700' },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  chipActive: { backgroundColor: brand.green, borderColor: brand.green },
+  chipText: { fontSize: 13, color: brand.text, fontWeight: '500' },
+  chipTextActive: { color: brand.onGreen, fontWeight: '700' },
 })

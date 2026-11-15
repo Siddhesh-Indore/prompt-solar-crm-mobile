@@ -12,6 +12,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import BackButton from '@/components/BackButton'
+import { brand } from '@/constants/brand'
 
 const TENURE_PRESETS = [1, 2, 3, 5, 7, 10]
 type InterestMethod = 'reducing' | 'flat'
@@ -125,7 +126,7 @@ export default function EmiCalculatorScreen() {
             onChangeText={setAmountStr}
             keyboardType="numeric"
             placeholder="e.g. 300000"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={brand.faint}
           />
         </View>
 
@@ -137,7 +138,7 @@ export default function EmiCalculatorScreen() {
             onChangeText={setRateStr}
             keyboardType="decimal-pad"
             placeholder="e.g. 10.5"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={brand.faint}
           />
         </View>
 
@@ -226,36 +227,36 @@ export default function EmiCalculatorScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f9fafb' },
+  safe: { flex: 1, backgroundColor: brand.bg },
   content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280', marginTop: 2, marginBottom: 20 },
+  title: { fontSize: 20, fontWeight: '700', color: brand.ink },
+  subtitle: { fontSize: 13, color: brand.muted, marginTop: 2, marginBottom: 20 },
   field: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: '#111827', backgroundColor: '#fff' },
+  label: { fontSize: 13, fontWeight: '600', color: brand.text, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: brand.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: brand.ink, backgroundColor: '#fff' },
   methodRow: { flexDirection: 'row', gap: 8 },
-  methodChip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff', alignItems: 'center' },
-  methodChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  methodChipText: { fontSize: 13, color: '#374151', fontWeight: '600' },
-  methodChipTextActive: { color: '#052e16', fontWeight: '700' },
-  methodHint: { fontSize: 11, color: '#9ca3af', marginTop: 6, lineHeight: 15 },
+  methodChip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff', alignItems: 'center' },
+  methodChipActive: { backgroundColor: brand.green, borderColor: brand.green },
+  methodChipText: { fontSize: 13, color: brand.text, fontWeight: '600' },
+  methodChipTextActive: { color: brand.onGreen, fontWeight: '700' },
+  methodHint: { fontSize: 11, color: brand.faint, marginTop: 6, lineHeight: 15 },
   tenureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tenureChip: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  tenureChipActive: { backgroundColor: '#4ade80', borderColor: '#4ade80' },
-  tenureChipText: { fontSize: 13, color: '#374151', fontWeight: '600' },
-  tenureChipTextActive: { color: '#052e16', fontWeight: '700' },
-  resultCard: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#bbf7d0', borderRadius: 14, padding: 18, marginTop: 8, alignItems: 'center' },
-  resultLabel: { fontSize: 13, color: '#047857', fontWeight: '600' },
-  resultEmi: { fontSize: 32, color: '#052e16', fontWeight: '800', marginTop: 4 },
+  tenureChip: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: brand.border, backgroundColor: '#fff' },
+  tenureChipActive: { backgroundColor: brand.green, borderColor: brand.green },
+  tenureChipText: { fontSize: 13, color: brand.text, fontWeight: '600' },
+  tenureChipTextActive: { color: brand.onGreen, fontWeight: '700' },
+  resultCard: { backgroundColor: brand.greenTint, borderWidth: 1, borderColor: brand.greenBorder, borderRadius: 14, padding: 18, marginTop: 8, alignItems: 'center' },
+  resultLabel: { fontSize: 13, color: brand.greenDark, fontWeight: '600' },
+  resultEmi: { fontSize: 32, color: brand.onGreen, fontWeight: '800', marginTop: 4 },
   resultRow: { flexDirection: 'row', gap: 24, marginTop: 16, width: '100%', justifyContent: 'center' },
   resultCol: { alignItems: 'center' },
-  resultSubLabel: { fontSize: 11, color: '#6b7280' },
-  resultSubValue: { fontSize: 15, color: '#111827', fontWeight: '700', marginTop: 2 },
+  resultSubLabel: { fontSize: 11, color: brand.muted },
+  resultSubValue: { fontSize: 15, color: brand.ink, fontWeight: '700', marginTop: 2 },
   scheduleToggle: { marginTop: 16, alignItems: 'center', paddingVertical: 10 },
-  scheduleToggleText: { fontSize: 13, color: '#047857', fontWeight: '600' },
-  scheduleTable: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, overflow: 'hidden' },
-  scheduleRow: { flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  scheduleHeaderRow: { backgroundColor: '#f9fafb' },
-  scheduleCell: { flex: 1, fontSize: 12, color: '#374151' },
-  scheduleHeaderText: { fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', fontSize: 10 },
+  scheduleToggleText: { fontSize: 13, color: brand.greenDark, fontWeight: '600' },
+  scheduleTable: { borderWidth: 1, borderColor: brand.borderLight, borderRadius: 10, overflow: 'hidden' },
+  scheduleRow: { flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: brand.surfaceAlt },
+  scheduleHeaderRow: { backgroundColor: brand.bg },
+  scheduleCell: { flex: 1, fontSize: 12, color: brand.text },
+  scheduleHeaderText: { fontWeight: '700', color: brand.muted, textTransform: 'uppercase', fontSize: 10 },
 })

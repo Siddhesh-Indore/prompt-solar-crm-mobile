@@ -5,6 +5,7 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView,
 } from 'react-native'
 import { useAuth } from '@/context/AuthContext'
+import { brand } from '@/constants/brand'
 
 export default function LoginScreen() {
   const { session, loading, signIn } = useAuth()
@@ -45,7 +46,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="you@promptsolar.com"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
@@ -57,7 +58,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="••••••••"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={brand.faint}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -94,20 +95,20 @@ const styles = StyleSheet.create({
     width: 220, height: 45,
     alignSelf: 'center', marginBottom: 20,
   },
-  title: { color: '#111827', fontSize: 24, fontWeight: '700', textAlign: 'center' },
-  subtitle: { color: '#6b7280', fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 32 },
-  card: { backgroundColor: '#fff', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: '#e5e7eb' },
-  cardTitle: { color: '#111827', fontSize: 16, fontWeight: '600', marginBottom: 20 },
-  label: { color: '#374151', fontSize: 13, fontWeight: '500', marginBottom: 6 },
+  title: { color: brand.ink, fontSize: 24, fontWeight: '700', textAlign: 'center' },
+  subtitle: { color: brand.muted, fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 32 },
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: brand.borderLight },
+  cardTitle: { color: brand.ink, fontSize: 16, fontWeight: '600', marginBottom: 20 },
+  label: { color: brand.text, fontSize: 13, fontWeight: '500', marginBottom: 6 },
   input: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 12, color: '#111827', fontSize: 14, marginBottom: 16,
+    backgroundColor: '#fff', borderWidth: 1, borderColor: brand.border, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 12, color: brand.ink, fontSize: 14, marginBottom: 16,
   },
-  errorBox: { backgroundColor: '#fee2e2', borderColor: '#fecaca', borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 16 },
-  errorText: { color: '#b91c1c', fontSize: 13 },
-  button: { backgroundColor: '#4ade80', borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+  errorBox: { backgroundColor: brand.dangerSoft, borderColor: brand.dangerBorder, borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 16 },
+  errorText: { color: brand.danger, fontSize: 13 },
+  button: { backgroundColor: brand.green, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#052e16', fontSize: 15, fontWeight: '700' },
+  buttonText: { color: brand.onGreen, fontSize: 15, fontWeight: '700' },
   forgotLink: { marginTop: 16, alignItems: 'center' },
-  forgotLinkText: { color: '#047857', fontSize: 13, fontWeight: '600' },
+  forgotLinkText: { color: brand.greenDark, fontSize: 13, fontWeight: '600' },
 })

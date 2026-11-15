@@ -1,6 +1,7 @@
 // src/components/sales/badges/LeadSourceBadge.tsx
 import { View, Text, StyleSheet } from 'react-native'
 import type { LeadSource } from '@/types/sales'
+import { brand } from '@/constants/brand'
 
 const SOURCE_LABEL: Record<LeadSource, string> = {
   meta: 'Meta Ads',
@@ -14,11 +15,11 @@ const SOURCE_LABEL: Record<LeadSource, string> = {
 }
 
 const SOURCE_COLORS: Record<LeadSource, { bg: string; text: string; border: string }> = {
-  meta: { bg: '#dbeafe', text: '#1d4ed8', border: '#bfdbfe' },
-  google: { bg: '#fee2e2', text: '#b91c1c', border: '#fecaca' },
-  website: { bg: '#d1fae5', text: '#047857', border: '#a7f3d0' },
+  meta: { bg: brand.infoSoft, text: brand.info, border: '#bfdbfe' },
+  google: { bg: brand.dangerSoft, text: brand.danger, border: brand.dangerBorder },
+  website: { bg: brand.greenSoft, text: brand.greenDark, border: brand.greenBorder },
   cold_call: { bg: '#e0e7ff', text: '#4338ca', border: '#c7d2fe' },
-  owner_ref: { bg: '#fef3c7', text: '#b45309', border: '#fde68a' },
+  owner_ref: { bg: brand.warningSoft, text: brand.warning, border: brand.warningBorder },
   employee_ref: { bg: '#ffedd5', text: '#c2410c', border: '#fed7aa' },
   customer_ref: { bg: '#fce7f3', text: '#be185d', border: '#fbcfe8' },
   manual: { bg: '#f1f5f9', text: '#334155', border: '#e2e8f0' },
