@@ -6,7 +6,7 @@
 // org-wide (find_leads_by_phone, migration 086) rather than only against
 // leads this user can see.
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useCreateLead, findDuplicateLeadsByPhone, type DuplicateLead } from '@/hooks/useLeadMutations'
@@ -94,8 +94,18 @@ export default function NewLeadScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* 'padding' on Android too: with edge-to-edge the keyboard overlays the
+          screen instead of resizing it, so without this the lower fields and
+          the Create button end up under the keyboard and can't be scrolled to. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
+        >
           <BackButton onPress={() => router.back()} />
           <Text style={styles.title}>New Lead</Text>
           <Text style={styles.subtitle}>Capture the basics — it goes straight to your Visits, ready for the first visit.</Text>
@@ -172,7 +182,7 @@ export default function NewLeadScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: brand.bg },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 120 },
   title: { fontSize: 20, fontWeight: '700', color: brand.ink },
   subtitle: { fontSize: 13, color: brand.muted, marginTop: 2, marginBottom: 16 },
   field: { marginBottom: 14 },

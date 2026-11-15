@@ -9,7 +9,7 @@
 // (see PreVisitCallForm/PostVisitForm/ClientIntakeForm's handleCancel). A
 // second, unconfirmed close affordance here would let people bypass that and
 // lose what they typed.
-import { Modal, View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
+import { Modal, View, Text, ScrollView, StyleSheet, KeyboardAvoidingView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { brand } from '@/constants/brand'
 
@@ -29,8 +29,16 @@ export default function FormSheet({ visible, title, onClose, children }: FormShe
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
         </View>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* 'padding' on Android too — see new-lead.tsx: edge-to-edge means the
+            keyboard no longer resizes the screen by itself. */}
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
+          >
             {children}
           </ScrollView>
         </KeyboardAvoidingView>
@@ -45,5 +53,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: brand.borderLight,
   },
   title: { fontSize: 15, fontWeight: '700', color: brand.ink },
-  content: { padding: 16 },
+  content: { padding: 16, paddingBottom: 80 },
 })
