@@ -10,6 +10,7 @@ export interface NewLeadInput {
   phone: string
   address?: string
   source: LeadSource
+  referred_by?: string
   notes?: string
 }
 

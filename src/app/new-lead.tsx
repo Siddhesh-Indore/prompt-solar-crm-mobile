@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router'
 import { useCreateLead, findDuplicateLeadsByPhone, type DuplicateLead } from '@/hooks/useLeadMutations'
 import BackButton from '@/components/BackButton'
 import ChipSelect from '@/components/sales/ChipSelect'
+import { isReferenceSource } from '@/lib/leadSource'
 import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 import StageBadge from '@/components/sales/badges/StageBadge'
 import type { LeadSource } from '@/types/sales'
@@ -23,6 +24,7 @@ const SOURCE_OPTIONS: { value: LeadSource; label: string }[] = [
   { value: 'cold_call', label: 'Cold Call' },
   { value: 'owner_ref', label: 'Owner Ref' },
   { value: 'employee_ref', label: 'Employee Ref' },
+  { value: 'customer_ref', label: 'Customer Ref' },
   { value: 'meta', label: 'Meta Ads' },
   { value: 'google', label: 'Google Ads' },
   { value: 'website', label: 'Website' },
@@ -35,6 +37,7 @@ export default function NewLeadScreen() {
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [source, setSource] = useState<LeadSource>('manual')
+  const [referredBy, setReferredBy] = useState('')
   const [notes, setNotes] = useState('')
   const [duplicates, setDuplicates] = useState<DuplicateLead[]>([])
   const [checking, setChecking] = useState(false)
@@ -66,6 +69,8 @@ export default function NewLeadScreen() {
     setError(null)
     if (name.trim().length < 2) return setError('Name is required.')
     if (!/^\d{10}$/.test(phone)) return setError('Phone must be exactly 10 digits.')
+    // A reference only means something if we know who gave it.
+    if (isReferenceSource(source) && !referredBy.trim()) return setError('Add who gave the reference.')
 
     try {
       // A failed check must not fall through to creating the lead — better
@@ -78,6 +83,7 @@ export default function NewLeadScreen() {
         phone,
         address: address.trim() || undefined,
         source,
+        referred_by: isReferenceSource(source) ? referredBy.trim() : undefined,
         notes: notes.trim() || undefined,
       })
       hapticSuccess()
@@ -153,6 +159,22 @@ export default function NewLeadScreen() {
             <Text style={styles.label}>Source</Text>
             <ChipSelect options={SOURCE_OPTIONS} value={source} onChange={setSource} />
           </View>
+
+          {isReferenceSource(source) && (
+            <View style={styles.field}>
+              <Text style={styles.label}>Referred by <Text style={styles.required}>*</Text></Text>
+              <TextInput
+                style={styles.input}
+                value={referredBy}
+                onChangeText={setReferredBy}
+                placeholder="Name (and phone) of who gave the reference"
+                placeholderTextColor={brand.faint}
+              />
+              <Text style={styles.hint}>
+                {source === 'employee_ref' ? 'The employee who referred this customer.' : 'The existing customer who referred this person.'}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.field}>
             <Text style={styles.label}>Notes</Text>

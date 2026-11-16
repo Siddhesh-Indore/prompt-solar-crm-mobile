@@ -54,6 +54,8 @@ export interface Lead {
   temperature: LeadTemperature | null
   source: LeadSource
   source_ref_id: string | null
+  // Who gave the reference — set when source is employee_ref or customer_ref (migration 090).
+  referred_by: string | null
   assigned_caller_id: string | null
   assigned_exec_id: string | null
   visit_date: string | null

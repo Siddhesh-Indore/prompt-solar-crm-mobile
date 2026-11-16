@@ -58,6 +58,7 @@ export default function LeadDetailModal({ lead, onClose }: LeadDetailModalProps)
 
           <Section title="Visit">
             <Row label="Address" value={lead.address ?? '—'} />
+            {lead.referred_by ? <Row label="Referred by" value={lead.referred_by} /> : null}
             <Row label="Visit Date" value={lead.visit_date ? `${formatDate(lead.visit_date)} ${lead.visit_time ?? ''}` : '—'} />
           </Section>
 
