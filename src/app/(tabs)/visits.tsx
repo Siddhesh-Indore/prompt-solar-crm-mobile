@@ -10,7 +10,7 @@
 // their own, so they see every lead with a visit fixed/pending, same scope as
 // admin/manager.
 import { useMemo, useState } from 'react'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLeads } from '@/hooks/useLeads'
@@ -27,6 +27,7 @@ const VISIT_FILTERS_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
 export default function VisitsScreen() {
   const { user, profile } = useAuth()
   const router = useRouter()
+  const { stage: initialStage, t: stageNonce } = useLocalSearchParams<{ stage?: string; t?: string }>()
   // Admin/manager can already fill an intake form for any lead per RLS
   // (client_intake_forms_insert allows admin/manager/sales_exec) — this
   // screen used to hard-filter to assignedExecId regardless of role, so
@@ -60,7 +61,7 @@ export default function VisitsScreen() {
             <Text style={styles.newLeadBtnText}>+ New Lead</Text>
           </TouchableOpacity>
         </View>
-        <VisitsBoard execId={user.id} onOpenDetail={setDetailLead} />
+        <VisitsBoard execId={user.id} initialStage={initialStage} stageNonce={stageNonce} onOpenDetail={setDetailLead} />
         <LeadDetailModal lead={detailLead} onClose={() => setDetailLead(null)} />
       </SafeAreaView>
     )

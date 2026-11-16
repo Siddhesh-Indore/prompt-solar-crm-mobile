@@ -119,6 +119,14 @@ export function compareNewFirstThenVisit(infoFor: (id: string) => LeadVisitInfo)
   }
 }
 
+/** Has a pre-visit call been logged for the visit about to happen? A visit
+ * report closes out the previous visit, so only a pre-visit call made after
+ * the last visit report counts (or any pre-visit call, when there's been no
+ * visit yet). Anyone's call counts — a telecaller's confirmation call too. */
+export function hasPreVisitCallSince(calls: { call_type: string; called_at: string }[], lastVisitAt: string | null): boolean {
+  return calls.some((c) => c.call_type === 'pre_visit' && (!lastVisitAt || c.called_at > lastVisitAt))
+}
+
 /** Longest waiting first — an unsigned deal gets riskier the longer it sits. */
 export function compareByLastVisitOldest(infoFor: (id: string) => LeadVisitInfo) {
   return (a: Lead, b: Lead): number =>

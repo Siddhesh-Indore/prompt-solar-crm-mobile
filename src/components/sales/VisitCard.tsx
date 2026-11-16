@@ -5,9 +5,10 @@
 // sales exec's stage board. A lead only unlocks the client intake form once
 // its latest visit report outcome is 'finalized'.
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { useLatestVisitOutcome } from '@/hooks/useVisitReports'
+import { useVisitReports } from '@/hooks/useVisitReports'
+import { useCallLogs } from '@/hooks/useCallLogs'
 import { useClientIntakeForm } from '@/hooks/useClientIntake'
 import LeadSourceBadge from '@/components/sales/badges/LeadSourceBadge'
 import StageBadge from '@/components/sales/badges/StageBadge'
@@ -19,9 +20,9 @@ import AdvanceReceivedForm from '@/components/sales/AdvanceReceivedForm'
 import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
 import { brand } from '@/constants/brand'
-import { dateSlot } from '@/lib/visitBoard'
+import { dateSlot, hasPreVisitCallSince } from '@/lib/visitBoard'
 import { mapsLinkFor } from '@/lib/share'
-import { hapticSelect } from '@/lib/haptics'
+import { hapticSelect, hapticWarning } from '@/lib/haptics'
 
 function formatDate(d: string | null) {
   if (!d) return ''
@@ -38,15 +39,18 @@ const BUTTON_HEIGHT = 36
 
 type ActionVariant = 'primary' | 'ghost' | 'muted'
 
-function ActionButton({ variant, icon, label, onPress, wide }: { variant: ActionVariant; icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; wide?: boolean }) {
-  const color = variant === 'primary' ? brand.onGreen : variant === 'ghost' ? brand.navy : brand.muted
+function ActionButton({ variant, icon, label, onPress, wide, locked }: { variant: ActionVariant; icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; wide?: boolean; locked?: boolean }) {
+  // A locked button stays visible (so it's clear what's coming) but greyed out
+  // with a padlock; tapping it explains what unlocks it instead of acting.
+  const color = locked ? brand.faint : variant === 'primary' ? brand.onGreen : variant === 'ghost' ? brand.navy : brand.muted
   return (
     <TouchableOpacity
-      style={[styles.actionBtn, variant === 'primary' ? styles.actionBtnPrimary : styles.actionBtnOutline, wide ? styles.actionBtnWide : styles.actionBtnHalf]}
-      onPress={() => { hapticSelect(); onPress() }}
+      style={[styles.actionBtn, locked ? styles.actionBtnLocked : variant === 'primary' ? styles.actionBtnPrimary : styles.actionBtnOutline, wide ? styles.actionBtnWide : styles.actionBtnHalf]}
+      onPress={() => { if (locked) hapticWarning(); else hapticSelect(); onPress() }}
       activeOpacity={0.7}
+      accessibilityState={{ disabled: !!locked }}
     >
-      <Ionicons name={icon} size={BUTTON_ICON_SIZE} color={color} />
+      <Ionicons name={locked ? 'lock-closed' : icon} size={BUTTON_ICON_SIZE} color={color} />
       <Text style={[styles.actionBtnText, { color }]} numberOfLines={1}>{label}</Text>
     </TouchableOpacity>
   )
@@ -69,7 +73,13 @@ export default function VisitCard({ lead, onDone, onOpenDetail, canManage, extra
   const [loggingCall, setLoggingCall] = useState(false)
   const [fillingIntake, setFillingIntake] = useState(false)
   const [sendingToTelecaller, setSendingToTelecaller] = useState(false)
-  const outcome = useLatestVisitOutcome(lead.id)
+  const { data: visitReports = [], isLoading: visitsLoading } = useVisitReports(lead.id)
+  const outcome = visitReports[0]?.outcome ?? null
+  const { data: callLogs = [], isLoading: callsLoading } = useCallLogs(lead.id)
+  // Record Visit stays locked until the pre-visit call for this visit is logged
+  // (and while that's still loading, so it can't be tapped in the gap).
+  const preVisitLogged = hasPreVisitCallSince(callLogs, visitReports[0]?.visited_at ?? null)
+  const recordLocked = callsLoading || visitsLoading || !preVisitLogged
   const { data: intakeForm } = useClientIntakeForm(lead.id)
 
   const canRecord = (lead.stage === 'visit_fixed' || (lead.stage === 'visited' && outcome !== 'finalized')) && !recording && !loggingCall
@@ -129,12 +139,31 @@ export default function VisitCard({ lead, onDone, onOpenDetail, canManage, extra
       )}
 
       <View style={styles.buttonGrid}>
-        {showActions && canManage && canRecord && <ActionButton variant="primary" icon="clipboard-outline" label="Record Visit" onPress={() => setRecording(true)} wide />}
+        {showActions && canManage && canRecord && (
+          <ActionButton
+            variant="primary"
+            icon="clipboard-outline"
+            label="Record Visit"
+            locked={recordLocked}
+            wide
+            onPress={() => {
+              if (!recordLocked) return setRecording(true)
+              Alert.alert('Log the pre-visit call first', 'Record Visit unlocks once a pre-visit call is logged for this customer.', [
+                { text: 'Not now', style: 'cancel' },
+                { text: 'Log Pre-Visit Call', onPress: () => setLoggingCall(true) },
+              ])
+            }}
+          />
+        )}
         <ActionButton variant="ghost" icon="call-outline" label="Call" onPress={callLead} />
         {lead.address ? <ActionButton variant="ghost" icon="navigate-outline" label="Navigate" onPress={navigateToLead} /> : null}
-        {showActions && canManage && canRecord && <ActionButton variant="ghost" icon="call-outline" label="Pre-Visit Call" onPress={() => setLoggingCall(true)} />}
+        {showActions && canManage && canRecord && <ActionButton variant={recordLocked ? 'primary' : 'ghost'} icon="call-outline" label="Pre-Visit Call" onPress={() => setLoggingCall(true)} />}
         {showActions && canManage && canSendBack && <ActionButton variant="muted" icon="arrow-undo-outline" label="Send to Telecaller" onPress={() => setSendingToTelecaller(true)} />}
       </View>
+
+      {showActions && canManage && canRecord && recordLocked && !callsLoading && !visitsLoading && (
+        <Text style={styles.hintLock}>Log a pre-visit call to unlock Record Visit.</Text>
+      )}
 
       {showActions && !canManage && (
         intakeForm ? (
@@ -198,10 +227,12 @@ const styles = StyleSheet.create({
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: BUTTON_HEIGHT, paddingHorizontal: 10, borderRadius: 10 },
   actionBtnHalf: { flexBasis: '48.5%', flexGrow: 0 },
   actionBtnWide: { width: '100%' },
+  actionBtnLocked: { backgroundColor: brand.surfaceAlt, borderWidth: 1, borderColor: brand.borderLight },
   actionBtnPrimary: { backgroundColor: brand.green },
   actionBtnOutline: { backgroundColor: brand.white, borderWidth: 1, borderColor: brand.border },
   actionBtnText: { fontSize: BUTTON_FONT_SIZE, fontWeight: '600', flexShrink: 1 },
   hint: { fontSize: 12, color: brand.faint, marginTop: 10 },
+  hintLock: { fontSize: 12, color: brand.warning, marginTop: 8 },
   hintDone: { fontSize: 12, color: brand.greenDark, marginTop: 10 },
   advanceBox: { marginTop: 12, backgroundColor: brand.warningSoft, borderWidth: 1, borderColor: brand.warningBorder, borderRadius: 10, padding: 10, gap: 2, alignItems: 'stretch' },
   advanceTitle: { fontSize: 12, fontWeight: '700', color: brand.warning },

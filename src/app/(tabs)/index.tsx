@@ -11,7 +11,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/context/AuthContext'
 import { useLeads } from '@/hooks/useLeads'
 import { useMyFollowUps } from '@/hooks/useFollowUps'
-import { localDateKey } from '@/lib/visitBoard'
+import { useLeadVisitInfo, useVisitsDoneToday } from '@/hooks/useVisitBoard'
+import { localDateKey, classifyActiveLead, EMPTY_VISIT_INFO } from '@/lib/visitBoard'
 import { hapticSelect } from '@/lib/haptics'
 import { SkeletonBlock } from '@/components/ui/Skeleton'
 import TimeTrackingCard from '@/components/sales/TimeTrackingCard'
@@ -42,35 +43,65 @@ function greetingFor(hour: number): string {
   return 'Good evening'
 }
 
-// What's due today for a sales exec, from the same queries To-Do uses (so
-// they're already cached when the exec opens it).
+// What the day looks like for a sales exec. Built from the same data as the
+// Visits board (so the numbers agree with what's on that screen):
+//   done       visits saved today, whatever the outcome
+//   toVisit    leads still scheduled for a visit today
+//   followUps  customers visited but with no next visit booked (the board's
+//              Follow-up stage), plus any follow-up reminder due today or late
+//   overdue    scheduled visits whose date has passed
+// A recorded visit leaves "visit fixed", so counting only scheduled visits
+// made the number fall as the day went on and showed nothing for follow-ups.
 function useTodaySummary(enabled: boolean, userId: string | undefined) {
-  const { data: leads = [], isLoading: leadsLoading } = useLeads(
-    userId ? { stage: 'visit_fixed', assignedExecId: userId } : undefined,
+  const { data: activeLeads = [], isLoading: leadsLoading } = useLeads(
+    userId ? { stageIn: ['visit_fixed', 'visited'], assignedExecId: userId } : undefined,
     { enabled: enabled && !!userId },
   )
+  const leadIds = useMemo(() => activeLeads.map((l) => l.id), [activeLeads])
+  const { data: infoMap, isLoading: infoLoading } = useLeadVisitInfo(leadIds)
   const { data: followUps = [], isLoading: followUpsLoading } = useMyFollowUps()
+  const { data: done = 0, isLoading: doneLoading } = useVisitsDoneToday(userId, enabled)
 
   const summary = useMemo(() => {
     const today = localDateKey()
-    const visitDates = leads.filter((l) => l.visit_date).map((l) => l.visit_date!.slice(0, 10))
-    const followUpDates = followUps.map((f) => localDateKey(new Date(f.due_at)))
-    return {
-      visitsToday: visitDates.filter((d) => d === today).length,
-      followUpsToday: followUpDates.filter((d) => d === today).length,
-      overdue: visitDates.filter((d) => d < today).length + followUpDates.filter((d) => d < today).length,
-    }
-  }, [leads, followUps])
+    let toVisit = 0
+    let overdue = 0
+    const followUpLeadIds = new Set<string>()
 
-  return { ...summary, loading: enabled && (leadsLoading || followUpsLoading) }
+    for (const lead of activeLeads) {
+      const date = lead.visit_date?.slice(0, 10)
+      if (lead.stage === 'visit_fixed' && date) {
+        if (date === today) toVisit++
+        else if (date < today) overdue++
+      }
+      // Visited, not finalized, no next visit booked.
+      if (lead.stage === 'visited' && infoMap && classifyActiveLead(lead, infoMap.get(lead.id) ?? EMPTY_VISIT_INFO) === 'follow_up') {
+        followUpLeadIds.add(lead.id)
+      }
+    }
+    for (const f of followUps) {
+      if (localDateKey(new Date(f.due_at)) <= today) followUpLeadIds.add(f.lead_id)
+    }
+
+    return { done, toVisit, followUps: followUpLeadIds.size, overdue }
+  }, [activeLeads, infoMap, followUps, done])
+
+  const waitingOnInfo = leadIds.length > 0 && infoLoading
+  return { ...summary, loading: enabled && (leadsLoading || waitingOnInfo || followUpsLoading || doneLoading) }
 }
 
-function Stat({ value, label, tone }: { value: number; label: string; tone?: 'alert' }) {
-  return (
-    <View style={styles.stat}>
+function Stat({ value, label, tone, onPress }: { value: number; label: string; tone?: 'alert'; onPress?: () => void }) {
+  const body = (
+    <>
       <Text style={[styles.statValue, tone === 'alert' && value > 0 && styles.statValueAlert]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    </>
+  )
+  if (!onPress) return <View style={styles.stat}>{body}</View>
+  return (
+    <TouchableOpacity style={styles.stat} onPress={onPress} activeOpacity={0.7} accessibilityLabel={`${label}: ${value}. Open.`}>
+      {body}
+    </TouchableOpacity>
   )
 }
 
@@ -147,15 +178,15 @@ export default function HomeScreen() {
             </View>
             {today.loading ? (
               <View style={styles.statsRow}>
-                <SkeletonBlock width={60} height={34} radius={8} style={styles.skeletonOnNavy} />
-                <SkeletonBlock width={60} height={34} radius={8} style={styles.skeletonOnNavy} />
-                <SkeletonBlock width={60} height={34} radius={8} style={styles.skeletonOnNavy} />
+                {[0, 1, 2, 3].map((i) => <SkeletonBlock key={i} width={48} height={34} radius={8} style={styles.skeletonOnNavy} />)}
               </View>
             ) : (
               <View style={styles.statsRow}>
-                <Stat value={today.visitsToday} label="Visits" />
+                <Stat value={today.done} label="Done" />
                 <View style={styles.statDivider} />
-                <Stat value={today.followUpsToday} label="Follow-ups" />
+                <Stat value={today.toVisit} label="To visit" />
+                <View style={styles.statDivider} />
+                <Stat value={today.followUps} label="Follow-ups" onPress={() => { hapticSelect(); router.push(`/visits?stage=follow_up&t=${Date.now()}` as never) }} />
                 <View style={styles.statDivider} />
                 <Stat value={today.overdue} label="Overdue" tone="alert" />
               </View>

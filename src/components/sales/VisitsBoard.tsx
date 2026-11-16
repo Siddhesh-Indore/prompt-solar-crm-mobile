@@ -5,7 +5,7 @@
 //
 // Cards move on their own — a lead's stage is derived from its visit reports
 // and intake form (see lib/visitBoard), never set by hand.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, RefreshControl, LayoutAnimation } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLeads } from '@/hooks/useLeads'
@@ -73,13 +73,25 @@ function cardBadges(stage: BoardStage, lead: Lead, info: LeadVisitInfo) {
 
 interface Props {
   execId: string
+  /** Stage to open on — set when arriving from a Home shortcut (e.g. the Follow-ups count). */
+  initialStage?: string
+  /** Changes on every such arrival, so opening the same stage twice still switches to it. */
+  stageNonce?: string
   onOpenDetail: (lead: Lead) => void
 }
 
-export default function VisitsBoard({ execId, onOpenDetail }: Props) {
+export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDetail }: Props) {
   const queryClient = useQueryClient()
   const [view, setView] = useState<ViewMode>('stage')
   const [stage, setStage] = useState<BoardStage>('first_visit')
+
+  useEffect(() => {
+    const target = BOARD_STAGES.find((s) => s.value === initialStage)
+    if (target) {
+      setView('stage')
+      setStage(target.value)
+    }
+  }, [initialStage, stageNonce])
 
   const { data: activeLeads = [], isLoading: leadsLoading, refetch: refetchLeads, isRefetching } = useLeads({ stageIn: ACTIVE_STAGES, assignedExecId: execId })
   const leadIds = useMemo(() => activeLeads.map((l) => l.id), [activeLeads])

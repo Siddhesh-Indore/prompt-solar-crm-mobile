@@ -5,7 +5,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { fetchAllRows } from '@/lib/fetchAllRows'
-import { EMPTY_VISIT_INFO, type LeadVisitInfo } from '@/lib/visitBoard'
+import { EMPTY_VISIT_INFO, localDateKey, type LeadVisitInfo } from '@/lib/visitBoard'
 import type { Lead, VisitReport } from '@/types/sales'
 
 // Keeps each .in() filter's URL comfortably under request-length limits.
@@ -18,6 +18,29 @@ function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = []
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
   return out
+}
+
+/** How many visit reports this exec has saved since local midnight — the
+ * visits actually done today, whatever their outcome. Home's "Done" count: a
+ * recorded visit moves its lead out of "visit fixed", so counting scheduled
+ * visits alone shrinks as the day goes on. */
+export function useVisitsDoneToday(execId: string | undefined, enabled: boolean) {
+  const day = localDateKey()
+  return useQuery({
+    queryKey: ['visit-board', 'done-today', execId, day],
+    enabled: enabled && !!execId,
+    queryFn: async (): Promise<number> => {
+      const start = new Date()
+      start.setHours(0, 0, 0, 0)
+      const { count, error } = await supabase
+        .from('visit_reports')
+        .select('id', { count: 'exact', head: true })
+        .eq('exec_id', execId!)
+        .gte('visited_at', start.toISOString())
+      if (error) throw error
+      return count ?? 0
+    },
+  })
 }
 
 /** Visit count, latest outcome and intake status for each lead id. */
