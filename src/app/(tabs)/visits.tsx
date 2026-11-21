@@ -21,6 +21,8 @@ import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import type { Lead } from '@/types/sales'
 import { brand } from '@/constants/brand'
 import { SkeletonList } from '@/components/ui/Skeleton'
+import SearchBar from '@/components/ui/SearchBar'
+import { matchesLeadQuery } from '@/lib/visitBoard'
 
 const VISIT_FILTERS_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
 
@@ -44,10 +46,11 @@ export default function VisitsScreen() {
     { enabled: !!user && !isSalesExec }
   )
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
+  const [query, setQuery] = useState('')
 
   const myVisits = useMemo(() => {
-    return [...leads].sort((a, b) => (a.visit_date ?? '').localeCompare(b.visit_date ?? ''))
-  }, [leads])
+    return leads.filter((l) => matchesLeadQuery(l, query)).sort((a, b) => (a.visit_date ?? '').localeCompare(b.visit_date ?? ''))
+  }, [leads, query])
 
   if (isSalesExec && user) {
     return (
@@ -76,19 +79,22 @@ export default function VisitsScreen() {
         </View>
       </View>
 
+      <SearchBar value={query} onChangeText={setQuery} />
+
       {isLoading ? (
         <SkeletonList />
       ) : (
         <FlatList
           data={myVisits}
+          keyboardShouldPersistTaps="handled"
           keyExtractor={(l) => l.id}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch() }} />}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No visits scheduled</Text>
+              <Text style={styles.emptyTitle}>{query.trim() ? 'No customer matches your search' : 'No visits scheduled'}</Text>
               <Text style={styles.emptySubtitle}>
-                {seesEveryVisit || isTelecaller ? 'Leads with a visit fixed will show up here.' : 'Leads assigned to you with a visit fixed will show up here.'}
+                {query.trim() ? 'Try a different name or number.' : seesEveryVisit || isTelecaller ? 'Leads with a visit fixed will show up here.' : 'Leads assigned to you with a visit fixed will show up here.'}
               </Text>
             </View>
           }

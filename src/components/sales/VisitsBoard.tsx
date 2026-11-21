@@ -12,19 +12,21 @@ import { useLeads } from '@/hooks/useLeads'
 import { useLeadVisitInfo, useAdvancePendingLeads, useDoneLeads, useLostLeads } from '@/hooks/useVisitBoard'
 import {
   BOARD_STAGES, DATE_SLOTS, EMPTY_VISIT_INFO, classifyActiveLead, compareByLastVisitOldest, compareByVisit,
-  compareNewFirstThenVisit, dateSlot, daysSince, isNewLead, type BoardStage, type DateSlot, type LeadVisitInfo,
+  compareNewFirstThenVisit, dateSlot, daysSince, isNewLead, matchesLeadQuery, type BoardStage, type DateSlot, type LeadVisitInfo,
 } from '@/lib/visitBoard'
 import VisitCard from '@/components/sales/VisitCard'
 import type { Lead } from '@/types/sales'
 import { brand } from '@/constants/brand'
 import { hapticSelect } from '@/lib/haptics'
 import { SkeletonList } from '@/components/ui/Skeleton'
+import SearchBar from '@/components/ui/SearchBar'
 
 const ACTIVE_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
 // Past this many days without a visit, a waiting customer is flagged red.
 const STALE_AFTER_DAYS = 7
 
 type ViewMode = 'stage' | 'date'
+type SearchRow = { kind: 'header'; stage: BoardStage; title: string; count: number } | { kind: 'lead'; lead: Lead; stage: BoardStage }
 type Row = { kind: 'header'; slot: DateSlot; title: string; count: number } | { kind: 'lead'; lead: Lead }
 
 function ordinal(n: number): string {
@@ -84,6 +86,8 @@ export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDe
   const queryClient = useQueryClient()
   const [view, setView] = useState<ViewMode>('stage')
   const [stage, setStage] = useState<BoardStage>('first_visit')
+  const [query, setQuery] = useState('')
+  const searching = query.trim().length > 0
 
   useEffect(() => {
     const target = BOARD_STAGES.find((s) => s.value === initialStage)
@@ -97,8 +101,8 @@ export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDe
   const leadIds = useMemo(() => activeLeads.map((l) => l.id), [activeLeads])
   const { data: infoMap, isLoading: infoLoading } = useLeadVisitInfo(leadIds)
   const { data: advanceLeads = [] } = useAdvancePendingLeads(execId)
-  const { data: doneLeads = [], isLoading: doneLoading } = useDoneLeads(execId, stage === 'done')
-  const { data: lostLeads = [], isLoading: lostLoading } = useLostLeads(execId, stage === 'lost')
+  const { data: doneLeads = [], isLoading: doneLoading } = useDoneLeads(execId, stage === 'done' || searching)
+  const { data: lostLeads = [], isLoading: lostLoading } = useLostLeads(execId, stage === 'lost' || searching)
 
   const infoFor = (id: string): LeadVisitInfo => infoMap?.get(id) ?? EMPTY_VISIT_INFO
 
@@ -134,6 +138,24 @@ export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDe
     return rows
   }, [byStage.first_visit, byStage.follow_up, infoMap])
 
+  // Searching looks across every stage at once (Done / Lost: their most recent
+  // 50), grouped under the stage each customer is in.
+  const searchRows = useMemo<SearchRow[]>(() => {
+    if (!searching) return []
+    const rows: SearchRow[] = []
+    const seen = new Set<string>()
+    for (const s of BOARD_STAGES) {
+      const hits = byStage[s.value].filter((l) => !seen.has(l.id) && matchesLeadQuery(l, query))
+      if (hits.length === 0) continue
+      rows.push({ kind: 'header', stage: s.value, title: s.label, count: hits.length })
+      for (const lead of hits) {
+        seen.add(lead.id)
+        rows.push({ kind: 'lead', lead, stage: s.value })
+      }
+    }
+    return rows
+  }, [searching, query, byStage])
+
   function refreshAll() {
     // A saved visit moves its card to another stage when the refetch lands —
     // animate that layout change so the card visibly slides away.
@@ -152,6 +174,7 @@ export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDe
         onOpenDetail={() => onOpenDetail(lead)}
         canManage
         showActions={!history}
+        allowStageChange={s === 'intake_pending' || s === 'lost'}
         extra={badges.length > 0 ? (
           <View style={styles.pillRow}>
             {badges.map((b) => <Pill key={b.text} text={b.text} tone={b.tone} />)}
@@ -168,6 +191,9 @@ export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDe
 
   return (
     <View style={{ flex: 1 }}>
+      <SearchBar value={query} onChangeText={setQuery} />
+
+      {!searching && (
       <View style={styles.viewToggle}>
         {(['stage', 'date'] as const).map((v) => (
           <TouchableOpacity key={v} style={[styles.toggleBtn, view === v && styles.toggleBtnActive]} onPress={() => { hapticSelect(); setView(v) }}>
@@ -175,8 +201,9 @@ export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDe
           </TouchableOpacity>
         ))}
       </View>
+      )}
 
-      {view === 'stage' && (
+      {!searching && view === 'stage' && (
         <View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
             {BOARD_STAGES.map((s) => {
@@ -199,8 +226,31 @@ export default function VisitsBoard({ execId, initialStage, stageNonce, onOpenDe
         </View>
       )}
 
-      {leadsLoading || waitingOnInfo || (view === 'stage' && stageLoading) ? (
+      {leadsLoading || waitingOnInfo || (searching ? doneLoading || lostLoading : view === 'stage' && stageLoading) ? (
         <SkeletonList />
+      ) : searching ? (
+        <FlatList
+          data={searchRows}
+          keyExtractor={(r) => (r.kind === 'header' ? `s-${r.stage}` : r.lead.id)}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>No customer matches “{query.trim()}”.</Text>
+            </View>
+          }
+          renderItem={({ item }) =>
+            item.kind === 'header' ? (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{item.title}</Text>
+                <Text style={styles.sectionCount}>{item.count}</Text>
+              </View>
+            ) : (
+              renderLead(item.lead, item.stage)
+            )
+          }
+        />
       ) : view === 'stage' ? (
         <FlatList
           data={stageList}

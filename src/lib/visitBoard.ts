@@ -132,3 +132,13 @@ export function compareByLastVisitOldest(infoFor: (id: string) => LeadVisitInfo)
   return (a: Lead, b: Lead): number =>
     (infoFor(a.id).lastVisitedAt ?? '').localeCompare(infoFor(b.id).lastVisitedAt ?? '')
 }
+
+/** Search box match for a lead: letters search the name, digits search the
+ * phone number (so "98765" finds +91 98765 43210 whatever the spacing). */
+export function matchesLeadQuery(lead: Pick<Lead, 'name' | 'phone'>, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  if (/[a-z]/.test(q)) return lead.name.toLowerCase().includes(q)
+  const digits = q.replace(/\D/g, '')
+  return digits.length > 0 && lead.phone.replace(/\D/g, '').includes(digits)
+}

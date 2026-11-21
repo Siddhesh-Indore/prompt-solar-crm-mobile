@@ -16,6 +16,7 @@ import PostVisitForm from '@/components/sales/PostVisitForm'
 import PreVisitCallForm from '@/components/sales/PreVisitCallForm'
 import ClientIntakeForm from '@/components/sales/ClientIntakeForm'
 import ReassignToTelecallerForm from '@/components/sales/ReassignToTelecallerForm'
+import ChangeStageForm from '@/components/sales/ChangeStageForm'
 import AdvanceReceivedForm from '@/components/sales/AdvanceReceivedForm'
 import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
@@ -65,14 +66,17 @@ interface VisitCardProps {
   extra?: React.ReactNode
   /** False for history cards (Done / Lost) and Advance Pending: only the details and, where it applies, "Mark Advance Received". */
   showActions?: boolean
+  /** Offer "Change Stage" to undo a mistaken Finalized / Lost (Intake Pending and Lost cards on the exec board). */
+  allowStageChange?: boolean
 }
 
-export default function VisitCard({ lead, onDone, onOpenDetail, canManage, extra, showActions = true }: VisitCardProps) {
+export default function VisitCard({ lead, onDone, onOpenDetail, canManage, extra, showActions = true, allowStageChange = false }: VisitCardProps) {
   const [receivingAdvance, setReceivingAdvance] = useState(false)
   const [recording, setRecording] = useState(false)
   const [loggingCall, setLoggingCall] = useState(false)
   const [fillingIntake, setFillingIntake] = useState(false)
   const [sendingToTelecaller, setSendingToTelecaller] = useState(false)
+  const [changingStage, setChangingStage] = useState(false)
   const { data: visitReports = [], isLoading: visitsLoading } = useVisitReports(lead.id)
   const outcome = visitReports[0]?.outcome ?? null
   const { data: callLogs = [], isLoading: callsLoading } = useCallLogs(lead.id)
@@ -80,11 +84,16 @@ export default function VisitCard({ lead, onDone, onOpenDetail, canManage, extra
   // (and while that's still loading, so it can't be tapped in the gap).
   const preVisitLogged = hasPreVisitCallSince(callLogs, visitReports[0]?.visited_at ?? null)
   const recordLocked = callsLoading || visitsLoading || !preVisitLogged
-  const { data: intakeForm } = useClientIntakeForm(lead.id)
+  const { data: intakeForm, isLoading: intakeLoading } = useClientIntakeForm(lead.id)
 
   const canRecord = (lead.stage === 'visit_fixed' || (lead.stage === 'visited' && outcome !== 'finalized')) && !recording && !loggingCall
   const canFillIntake = lead.stage === 'visited' && outcome === 'finalized' && !intakeForm && !fillingIntake
   const canSendBack = !intakeForm && !sendingToTelecaller
+  // A customer marked Finalized or Lost by mistake can be moved back — only
+  // while no intake form exists, and only by correcting the last visit.
+  const stageChangeFrom: 'finalized' | 'lost' | null =
+    lead.stage === 'visited' && outcome === 'finalized' ? 'finalized' : lead.stage === 'lost' && outcome === 'lost' ? 'lost' : null
+  const canChangeStage = allowStageChange && canManage && !!stageChangeFrom && !intakeForm && !intakeLoading && !visitsLoading
 
   // Same status colours used across the app: overdue red, today navy.
   const slot = lead.visit_date ? dateSlot(lead.visit_date) : null
@@ -181,6 +190,12 @@ export default function VisitCard({ lead, onDone, onOpenDetail, canManage, extra
 
       {showActions && canManage && intakeForm && <Text style={styles.hintDone}>Intake form submitted.</Text>}
 
+      {canChangeStage && (
+        <View style={styles.wideRow}>
+          <ActionButton variant="muted" icon="swap-horizontal-outline" label={stageChangeFrom === 'lost' ? 'Reopen / Change Stage' : 'Marked by mistake? Change Stage'} onPress={() => setChangingStage(true)} wide />
+        </View>
+      )}
+
       {canManage && intakeForm?.advance_mode === 'none' && (
         <View style={styles.advanceBox}>
           <Text style={styles.advanceTitle}>Advance not paid yet</Text>
@@ -206,6 +221,11 @@ export default function VisitCard({ lead, onDone, onOpenDetail, canManage, extra
       <FormSheet visible={sendingToTelecaller} title="Send Back to Telecaller" onClose={() => setSendingToTelecaller(false)}>
         <ReassignToTelecallerForm lead={lead} onDone={() => { setSendingToTelecaller(false); onDone() }} onCancel={() => setSendingToTelecaller(false)} />
       </FormSheet>
+      {stageChangeFrom && (
+        <FormSheet visible={changingStage} title="Change Stage" onClose={() => setChangingStage(false)}>
+          <ChangeStageForm lead={lead} current={stageChangeFrom} onDone={() => { setChangingStage(false); onDone() }} onCancel={() => setChangingStage(false)} />
+        </FormSheet>
+      )}
       {intakeForm && (
         <FormSheet visible={receivingAdvance} title="Advance Received" onClose={() => setReceivingAdvance(false)}>
           <AdvanceReceivedForm form={intakeForm} onDone={() => { setReceivingAdvance(false); onDone() }} onCancel={() => setReceivingAdvance(false)} />

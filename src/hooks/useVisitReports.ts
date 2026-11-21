@@ -151,3 +151,29 @@ export function useCreateVisitReport() {
     },
   })
 }
+
+export type CorrectedOutcome = 'follow_up' | 'finalized' | 'lost'
+
+/** Fixes the outcome of a customer's latest visit — e.g. one marked Finalized
+ * by mistake — and moves the lead's stage with it. Goes through the
+ * change_visit_outcome RPC (migration 092) because the database only lets an
+ * exec edit a visit report for 24 hours, and it also refuses once an intake
+ * form has been submitted. */
+export function useChangeVisitOutcome() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ leadId, outcome, note }: { leadId: string; outcome: CorrectedOutcome; note?: string }): Promise<void> => {
+      const { error } = await supabase.rpc('change_visit_outcome', { p_lead_id: leadId, p_outcome: outcome, p_note: note?.trim() || null })
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['visit-reports', variables.leadId] })
+      queryClient.invalidateQueries({ queryKey: ['lead-activities', variables.leadId] })
+      queryClient.invalidateQueries({ queryKey: ['lead', variables.leadId] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['leads-page'] })
+      queryClient.invalidateQueries({ queryKey: ['visit-board'] })
+    },
+  })
+}
