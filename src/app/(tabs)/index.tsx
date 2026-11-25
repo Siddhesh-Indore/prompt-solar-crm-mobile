@@ -20,7 +20,7 @@ import TimeTrackingCard from '@/components/sales/TimeTrackingCard'
 import RemindersCard from '@/components/sales/RemindersCard'
 import NeedsAttentionCard from '@/components/sales/NeedsAttentionCard'
 import NotificationBell from '@/components/sales/NotificationBell'
-import { buildNotificationFeed } from '@/lib/notificationFeed'
+import { useNotificationFeed } from '@/hooks/useNotificationFeed'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import { brand } from '@/constants/brand'
 
@@ -92,10 +92,7 @@ export default function HomeScreen() {
   const workload = useExecWorkload(isSalesExec, user?.id)
   const today = useTodaySummary(workload, isSalesExec, user?.id)
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
-  const feed = useMemo(
-    () => (isSalesExec && !workload.loading ? buildNotificationFeed({ leads: workload.activeLeads, infoMap: workload.infoMap, followUps: workload.followUps }) : []),
-    [isSalesExec, workload.loading, workload.activeLeads, workload.infoMap, workload.followUps],
-  )
+  const { items: feed } = useNotificationFeed(isSalesExec, user?.id)
 
   if (loading) {
     return (
@@ -138,7 +135,7 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{greetingFor(new Date().getHours())}{roleLabel ? ` · ${roleLabel}` : ''}</Text>
             <Text style={styles.name} numberOfLines={1}>{firstName || 'there'}</Text>
           </View>
-          {isSalesExec && <NotificationBell items={feed} onOpenLead={setDetailLead} onOpenTodo={() => router.push('/todo')} />}
+          {isSalesExec && <NotificationBell count={feed.length} onPress={() => router.push('/notifications')} />}
           <TouchableOpacity style={styles.signOutBtn} onPress={signOut} accessibilityLabel="Sign out" hitSlop={8}>
             <Ionicons name="log-out-outline" size={22} color={brand.muted} />
           </TouchableOpacity>

@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext'
 import { brand } from '@/constants/brand'
 import { hapticSelect } from '@/lib/haptics'
 import { useReminderSync } from '@/hooks/useReminderSync'
+import { useNotificationFeed } from '@/hooks/useNotificationFeed'
 
 type IconName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -30,8 +31,10 @@ function ReminderSync() {
 }
 
 export default function TabsLayout() {
-  const { session, profile, loading } = useAuth()
+  const { session, profile, loading, user } = useAuth()
   const queryClient = useQueryClient()
+  // Count on the Notifications tab's badge.
+  const { items: notifications } = useNotificationFeed(profile?.role === 'sales_exec', user?.id)
 
   if (loading) return null
   if (!session) return <Redirect href="/login" />
@@ -40,6 +43,7 @@ export default function TabsLayout() {
   const canSeeQueue = role === 'telecaller' || role === 'admin' || role === 'manager'
   const canSeeVisits = role === 'sales_exec' || role === 'admin' || role === 'manager' || role === 'telecaller'
   const canSeeTodo = role === 'sales_exec' || role === 'telecaller' || role === 'admin' || role === 'manager'
+  const canSeeNotifications = role === 'sales_exec'
 
   return (
     <>
@@ -68,6 +72,17 @@ export default function TabsLayout() {
       <Tabs.Screen name="queue" options={{ title: 'Queue', href: canSeeQueue ? undefined : null, tabBarIcon: tabIcon('call-outline', 'call') }} />
       <Tabs.Screen name="visits" options={{ title: 'Visits', href: canSeeVisits ? undefined : null, tabBarIcon: tabIcon('car-outline', 'car') }} />
       <Tabs.Screen name="todo" options={{ title: 'To-Do', href: canSeeTodo ? undefined : null, tabBarIcon: tabIcon('checkbox-outline', 'checkbox') }} />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          href: canSeeNotifications ? undefined : null,
+          tabBarBadge: notifications.length > 0 ? (notifications.length > 9 ? '9+' : notifications.length) : undefined,
+          tabBarBadgeStyle: { backgroundColor: brand.danger, color: '#fff', fontSize: 10, fontWeight: '800' },
+          tabBarIcon: tabIcon('notifications-outline', 'notifications'),
+        }}
+      />
+      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('person-outline', 'person') }} />
     </Tabs>
     </>
   )
