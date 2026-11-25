@@ -14,6 +14,8 @@ export interface Profile {
   phone: string | null
   role: string
   branch: string | null
+  /** Number in the company attendance system (eo06); set by an admin — migration 094. */
+  employee_no: string | null
   avatar_url: string | null
   created_at: string
 }

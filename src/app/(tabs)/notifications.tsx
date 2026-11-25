@@ -1,5 +1,5 @@
 // src/app/(tabs)/notifications.tsx
-// Notifications tab (sales exec): the leads that want attention right now —
+// Notifications screen (sales exec), opened from the bell on Home and Profile: the leads that want attention right now —
 // follow-ups due, visits due today or overdue, customers waiting on an intake
 // form, new leads — most urgent first. Built live from the visit pipeline (see
 // lib/notificationFeed), so an item disappears as soon as it's dealt with.

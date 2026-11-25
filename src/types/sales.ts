@@ -246,6 +246,9 @@ export interface TimeLog {
   clock_out_at: string | null
   clock_in_selfie_path: string | null
   clock_out_selfie_path: string | null
+  /** When each punch reached the company attendance system; null = not delivered (migration 094). */
+  clock_in_sent_at: string | null
+  clock_out_sent_at: string | null
   created_at: string
 }
 

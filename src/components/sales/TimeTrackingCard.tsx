@@ -17,6 +17,11 @@ function formatTimeIST(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' })
 }
 
+// A punch is sent the moment it is saved — only call it stuck once it has had a fair chance.
+function isOlderThanTwoMinutes(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() > 2 * 60 * 1000
+}
+
 function formatDuration(startIso: string, endIso: string): string {
   const minutes = Math.max(0, Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000))
   const h = Math.floor(minutes / 60)
@@ -28,7 +33,7 @@ export default function TimeTrackingCard() {
   const { data: log, isLoading } = useTodayTimeLog()
   const clockIn = useClockIn()
   const clockOut = useClockOut()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [capturing, setCapturing] = useState(false)
 
   const busy = capturing || clockIn.isPending || clockOut.isPending
@@ -108,6 +113,16 @@ export default function TimeTrackingCard() {
         )}
       </View>
 
+      {!isLoading && !profile?.employee_no && (
+        <Text style={styles.warn}>No employee number set yet — ask an admin to add yours so your punches reach the attendance system.</Text>
+      )}
+      {!isLoading && !!profile?.employee_no && !!log && (
+        (!log.clock_in_sent_at && isOlderThanTwoMinutes(log.clock_in_at)) ||
+        (!!log.clock_out_at && !log.clock_out_sent_at && isOlderThanTwoMinutes(log.clock_out_at))
+      ) && (
+        <Text style={styles.warn}>Saved. Waiting to reach the attendance system — it will retry automatically when you're online.</Text>
+      )}
+
       {(clockIn.isError || clockOut.isError) && (
         <Text style={styles.error}>
           {(clockIn.error ?? clockOut.error) instanceof Error ? (clockIn.error ?? clockOut.error as Error).message : 'Something went wrong'}
@@ -131,4 +146,5 @@ const styles = StyleSheet.create({
   clockOutButton: { backgroundColor: brand.dangerSoft },
   clockOutText: { fontSize: 13, fontWeight: '700', color: brand.danger },
   error: { fontSize: 11, color: brand.danger, marginTop: 8 },
+  warn: { fontSize: 11, color: brand.warning, marginTop: 8 },
 })

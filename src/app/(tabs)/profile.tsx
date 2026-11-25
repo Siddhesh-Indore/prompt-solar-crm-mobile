@@ -96,6 +96,7 @@ export default function ProfileScreen() {
           {profile?.email ? <Row icon="mail-outline" label="Email" value={profile.email} /> : null}
           {profile?.phone ? <Row icon="call-outline" label="Phone" value={profile.phone} /> : null}
           {profile?.branch ? <Row icon="location-outline" label="Branch" value={profile.branch} /> : null}
+          {isSalesExec && <Row icon="id-card-outline" label="Employee no." value={profile?.employee_no ?? 'Not set'} valueTone={profile?.employee_no ? undefined : 'bad'} />}
           <Row icon="information-circle-outline" label="App version" value={Constants.expoConfig?.version ?? ''} />
         </View>
 
