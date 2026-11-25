@@ -12,7 +12,7 @@ import { useLeads } from '@/hooks/useLeads'
 import { useLeadVisitInfo, useAdvancePendingLeads, useDoneLeads, useLostLeads } from '@/hooks/useVisitBoard'
 import {
   BOARD_STAGES, DATE_SLOTS, EMPTY_VISIT_INFO, classifyActiveLead, compareByLastVisitOldest, compareByVisit,
-  compareNewFirstThenVisit, dateSlot, daysSince, isNewLead, matchesLeadQuery, type BoardStage, type DateSlot, type LeadVisitInfo,
+  compareNewFirstThenVisit, dateSlot, daysSince, isNewLead, matchesLeadQuery, STALE_AFTER_DAYS, type BoardStage, type DateSlot, type LeadVisitInfo,
 } from '@/lib/visitBoard'
 import VisitCard from '@/components/sales/VisitCard'
 import type { Lead } from '@/types/sales'
@@ -22,8 +22,6 @@ import { SkeletonList } from '@/components/ui/Skeleton'
 import SearchBar from '@/components/ui/SearchBar'
 
 const ACTIVE_STAGES: Lead['stage'][] = ['visit_fixed', 'visited']
-// Past this many days without a visit, a waiting customer is flagged red.
-const STALE_AFTER_DAYS = 7
 
 type ViewMode = 'stage' | 'date'
 type SearchRow = { kind: 'header'; stage: BoardStage; title: string; count: number } | { kind: 'lead'; lead: Lead; stage: BoardStage }

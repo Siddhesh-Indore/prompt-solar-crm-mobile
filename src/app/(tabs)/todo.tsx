@@ -15,12 +15,13 @@ import { useAuth } from '@/context/AuthContext'
 import { useMyFollowUps, useCompleteFollowUp } from '@/hooks/useFollowUps'
 import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import SharedVisitCard from '@/components/sales/VisitCard'
-import { localDateKey, daysUntil } from '@/lib/visitBoard'
+import { localDateKey, daysUntil, matchesLeadQuery } from '@/lib/visitBoard'
 import FollowUpSetter from '@/components/sales/FollowUpSetter'
 import FormSheet from '@/components/sales/FormSheet'
 import type { Lead } from '@/types/sales'
 import { brand } from '@/constants/brand'
 import { SkeletonList } from '@/components/ui/Skeleton'
+import SearchBar from '@/components/ui/SearchBar'
 
 type TodoItem =
   | { kind: 'visit'; sortKey: string; lead: Lead }
@@ -160,6 +161,9 @@ export default function TodoScreen() {
   const { data: followUps = [], isLoading: followUpsLoading, refetch: refetchFollowUps, isRefetching: followUpsRefetching } = useMyFollowUps()
   const [detailLead, setDetailLead] = useState<Lead | null>(null)
   const [range, setRange] = useState<RangeFilter>('today')
+  const [query, setQuery] = useState('')
+  // A search looks through everything on the list, not just today / this week.
+  const searching = query.trim().length > 0
 
   const items = useMemo(() => {
     const visitItems: TodoItem[] = leads
@@ -182,7 +186,14 @@ export default function TodoScreen() {
     return [...visitItems, ...followUpItems].sort((a, b) => a.sortKey.localeCompare(b.sortKey))
   }, [leads, followUps])
 
-  const visible = useMemo(() => items.filter((i) => inRange(i.sortKey.slice(0, 10), range)), [items, range])
+  const visible = useMemo(() => {
+    if (searching) {
+      return items.filter((i) =>
+        matchesLeadQuery(i.kind === 'visit' ? i.lead : { name: i.leadName, phone: i.leadPhone }, query),
+      )
+    }
+    return items.filter((i) => inRange(i.sortKey.slice(0, 10), range))
+  }, [items, range, searching, query])
   const overdue = visible.filter((i) => bucketOf(i.sortKey.slice(0, 10)) === 'overdue')
   const today = visible.filter((i) => bucketOf(i.sortKey.slice(0, 10)) === 'today')
   const upcoming = visible.filter((i) => bucketOf(i.sortKey.slice(0, 10)) === 'upcoming')
@@ -223,6 +234,9 @@ export default function TodoScreen() {
         <Text style={styles.subtitle}>{showsVisits ? 'Your visits and follow-ups' : 'Your follow-ups'}</Text>
       </View>
 
+      <SearchBar value={query} onChangeText={setQuery} />
+
+      {!searching && (
       <View style={styles.rangeRow}>
         {RANGE_OPTIONS.map((o) => {
           const active = o.value === range
@@ -233,6 +247,7 @@ export default function TodoScreen() {
           )
         })}
       </View>
+      )}
 
       {isLoading ? (
         <SkeletonList />
@@ -241,8 +256,15 @@ export default function TodoScreen() {
           data={sections}
           keyExtractor={(s) => s.title}
           contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetchAll() }} />}
           ListEmptyComponent={
+            searching ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyTitle}>No visit or follow-up matches “{query.trim()}”.</Text>
+              </View>
+            ) :
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>{range === 'today' ? 'Nothing due today' : range === 'week' ? 'Nothing due this week' : 'Nothing on your list'}</Text>
               <Text style={styles.emptySubtitle}>

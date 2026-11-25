@@ -2,6 +2,7 @@
 // Mirrors the web CRM's AuthContext (src/context/AuthContext.tsx there) —
 // same shape, same Supabase project, so the two apps' auth behavior stays
 // consistent for anyone working on both.
+import { clearScheduledReminders } from '@/lib/notifications'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    await clearScheduledReminders()
     await supabase.auth.signOut()
   }
 

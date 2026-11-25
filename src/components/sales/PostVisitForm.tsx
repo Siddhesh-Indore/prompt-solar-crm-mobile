@@ -4,22 +4,23 @@
 //   second_visit  -> stage=visit_fixed with a new visit date (loops back);
 //                    only offered on the first visit — once a customer is in
 //                    Follow-up the choices are Follow-up / Lost / Finalized
-//   follow_up     -> a next visit date is optional here too: if given, this
-//                    behaves like second_visit (the next visit IS the plan);
-//                    left blank, stage=visited and FollowUpSetter opens for
-//                    a callback reminder instead
+//   follow_up     -> needs a next step, so no customer is left with nothing
+//                    planned: either a next visit date (behaves like
+//                    second_visit — the next visit IS the plan) or a reminder
+//                    (stage=visited plus a pending follow-up due then)
 //   lost          -> stage=lost (terminal)
 import { useEffect, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { useAuth } from '@/context/AuthContext'
 import { useCreateVisitReport, useVisitReports, type NewVisitReportInput } from '@/hooks/useVisitReports'
 import { useUpdateLead } from '@/hooks/useLeadMutations'
+import { useCreateFollowUp } from '@/hooks/useFollowUps'
+import { supabase } from '@/lib/supabase'
 import { uploadVisitPhoto } from '@/lib/uploadVisitPhoto'
 import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 import ChipSelect from '@/components/sales/ChipSelect'
 import PreviousNotes from '@/components/sales/PreviousNotes'
 import DateTimeField from '@/components/sales/DateTimeField'
-import FollowUpSetter from '@/components/sales/FollowUpSetter'
 import LocationPhotoCapture, { type LocationPhotoValue } from '@/components/sales/LocationPhotoCapture'
 import type { Lead } from '@/types/sales'
 import { brand } from '@/constants/brand'
@@ -45,6 +46,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
   const { user } = useAuth()
   const createVisitReport = useCreateVisitReport()
   const updateLead = useUpdateLead()
+  const createFollowUp = useCreateFollowUp()
   // Every visit needs a site photo. The first visit also captures the GPS
   // location; follow-ups reuse it rather than asking for a fresh fix — the
   // site is the same, and the DB still wants a location on every visit
@@ -71,7 +73,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
   })
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [showFollowUpSetter, setShowFollowUpSetter] = useState(false)
+  const [reminderAt, setReminderAt] = useState('')
 
   // Reports can finish loading after the form opens; if "Second Visit" was
   // picked in that window, move to the closest remaining option.
@@ -81,11 +83,17 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
 
   const showNextVisitFields = outcome === 'second_visit' || outcome === 'follow_up'
   const nextVisitPlanned = showNextVisitFields && !!newVisitDate
+  // A follow-up always leaves a next step — a booked visit or a reminder.
+  const needsReminder = outcome === 'follow_up' && !nextVisitPlanned
 
   async function submit() {
     setError(null)
     if (outcome === 'second_visit' && !newVisitDate) {
       setError('Pick a date for the next visit.')
+      return
+    }
+    if (needsReminder && !reminderAt) {
+      setError('Pick a next visit date, or set a reminder for when to follow up.')
       return
     }
     const location = inheritedLocation ?? locationPhoto
@@ -100,6 +108,19 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
 
     setSubmitting(true)
     try {
+      if (needsReminder) {
+        // One pending reminder per customer — find out before anything is saved.
+        const { count } = await supabase
+          .from('follow_ups')
+          .select('id', { count: 'exact', head: true })
+          .eq('lead_id', lead.id)
+          .eq('status', 'pending')
+        if ((count ?? 0) > 0) {
+          setError('This customer already has a pending reminder. Pick a next visit date instead, or finish that reminder in To-Do first.')
+          return
+        }
+      }
+
       const photoPath = locationPhoto.photoUri
         ? await uploadVisitPhoto(user!.id, lead.id, locationPhoto.photoUri)
         : undefined
@@ -131,7 +152,8 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         onDone()
       } else if (outcome === 'follow_up') {
         await updateLead.mutateAsync({ id: lead.id, patch: { stage: 'visited' } })
-        setShowFollowUpSetter(true)
+        await createFollowUp.mutateAsync({ lead_id: lead.id, due_at: new Date(reminderAt).toISOString(), reason: nextStep || undefined })
+        onDone()
       } else {
         await updateLead.mutateAsync({ id: lead.id, patch: { stage: 'visited' } })
         onDone()
@@ -145,7 +167,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
   }
 
   function handleCancel() {
-    const hasInput = kwInterest || quoteDiscussed || nextStep || notes || newVisitDate || newVisitTime
+    const hasInput = kwInterest || quoteDiscussed || nextStep || notes || newVisitDate || newVisitTime || reminderAt
       || locationPhoto.latitude != null || locationPhoto.photoUri
     if (!hasInput) {
       onCancel?.()
@@ -155,10 +177,6 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
       { text: 'Keep Editing', style: 'cancel' },
       { text: 'Discard', style: 'destructive', onPress: onCancel },
     ])
-  }
-
-  if (showFollowUpSetter) {
-    return <FollowUpSetter leadId={lead.id} onDone={onDone} onCancel={onDone} />
   }
 
   return (
@@ -179,7 +197,7 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         <View style={styles.row2}>
           <View style={styles.col}>
             <DateTimeField
-              label={outcome === 'second_visit' ? 'Next Visit Date *' : 'Next Visit Date (optional)'}
+              label={outcome === 'second_visit' ? 'Next Visit Date *' : 'Next Visit Date'}
               value={newVisitDate}
               onChange={setNewVisitDate}
               mode="date"
@@ -193,8 +211,11 @@ export default function PostVisitForm({ lead, onDone, onCancel }: PostVisitFormP
         </View>
       )}
 
-      {outcome === 'follow_up' && !nextVisitPlanned && (
-        <Text style={styles.hint}>No next visit date? A follow-up reminder will be set instead after saving.</Text>
+      {needsReminder && (
+        <View style={styles.field}>
+          <DateTimeField label="Or remind me to follow up on *" value={reminderAt} onChange={setReminderAt} mode="datetime" minimumDate={new Date()} placeholder="Pick date & time" />
+          <Text style={[styles.hint, { marginTop: 6, marginBottom: 0 }]}>Every follow-up needs a next step: a next visit date above, or a reminder here. You'll get a notification when it's due.</Text>
+        </View>
       )}
 
       <View style={styles.row2}>

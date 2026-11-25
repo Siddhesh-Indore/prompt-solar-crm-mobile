@@ -67,8 +67,17 @@ export function daysUntil(visitDate: string, now: Date = new Date()): number {
   return dayNumber(y, m, d) - dayNumber(now.getFullYear(), now.getMonth() + 1, now.getDate())
 }
 
+/** A visit date in a believable year. A mistyped year (0026 for 2026) would
+ * otherwise read as ~100 years overdue — and JavaScript's Date.UTC quietly
+ * turns years 0-99 into 1900-1999. */
+export function isPlausibleVisitDate(visitDate: string | null): boolean {
+  if (!visitDate) return false
+  const year = Number(visitDate.slice(0, 4))
+  return year >= 2020 && year <= 2100
+}
+
 export function dateSlot(visitDate: string | null, now: Date = new Date()): DateSlot {
-  if (!visitDate) return 'no_date'
+  if (!visitDate || !isPlausibleVisitDate(visitDate)) return 'no_date'
   const diff = daysUntil(visitDate, now)
   if (diff < 0) return 'overdue'
   if (diff === 0) return 'today'
@@ -141,4 +150,52 @@ export function matchesLeadQuery(lead: Pick<Lead, 'name' | 'phone'>, query: stri
   if (/[a-z]/.test(q)) return lead.name.toLowerCase().includes(q)
   const digits = q.replace(/\D/g, '')
   return digits.length > 0 && lead.phone.replace(/\D/g, '').includes(digits)
+}
+
+// ── Needs attention ─────────────────────────────────────────────────────────
+// Past this many days without a visit, a waiting follow-up is flagged.
+export const STALE_AFTER_DAYS = 7
+// A finalized customer is waiting on the intake form — don't let it sit.
+export const INTAKE_WAITING_AFTER_DAYS = 2
+
+export type AttentionKind = 'visit_date_invalid' | 'visit_overdue' | 'follow_up_stale' | 'intake_waiting'
+
+export interface Attention {
+  kind: AttentionKind
+  /** How long it has been waiting — what the list is sorted by. */
+  days: number
+  label: string
+}
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`
+}
+
+/** Why a lead in the visit pipeline needs the exec's attention now, or null
+ * when it doesn't: a visit whose date has passed, a follow-up nobody has
+ * visited for a week, or a finalized customer still waiting on the intake
+ * form. Upcoming visits and recent follow-ups are fine as they are. */
+export function attentionFor(lead: Lead, info: LeadVisitInfo, now: Date = new Date()): Attention | null {
+  const stage = classifyActiveLead(lead, info)
+  if (!stage) return null
+
+  if (lead.stage === 'visit_fixed' && lead.visit_date) {
+    // A mistyped year can't be "overdue by N days" — say the date is wrong, and
+    // list it first so it gets fixed.
+    if (!isPlausibleVisitDate(lead.visit_date)) {
+      return { kind: 'visit_date_invalid', days: Number.MAX_SAFE_INTEGER, label: `Visit date looks wrong (${lead.visit_date.slice(0, 10)}) — set a new date` }
+    }
+    const late = -daysUntil(lead.visit_date, now)
+    return late > 0 ? { kind: 'visit_overdue', days: late, label: `Visit was due ${plural(late, 'day')} ago` } : null
+  }
+
+  if (!info.lastVisitedAt) return null
+  const waited = daysSince(info.lastVisitedAt, now)
+  if (stage === 'follow_up' && lead.stage === 'visited' && waited >= STALE_AFTER_DAYS) {
+    return { kind: 'follow_up_stale', days: waited, label: `Not visited for ${plural(waited, 'day')}` }
+  }
+  if (stage === 'intake_pending' && waited >= INTAKE_WAITING_AFTER_DAYS) {
+    return { kind: 'intake_waiting', days: waited, label: `Finalized ${plural(waited, 'day')} ago — intake form pending` }
+  }
+  return null
 }

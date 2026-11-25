@@ -1,22 +1,27 @@
 // src/app/(tabs)/index.tsx
 // Home. For a sales exec the first thing on screen is what's due today
-// (visits + follow-ups), then punch in/out, then a list of shortcuts. Other
+// (visits + follow-ups), then the customers that need attention, then punch in/out, then a list of shortcuts. Other
 // roles get the same shortcut list without the today summary. The Sales Leads
 // shortcut is intentionally absent.
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'expo-router'
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/context/AuthContext'
-import { useLeads } from '@/hooks/useLeads'
-import { useMyFollowUps } from '@/hooks/useFollowUps'
-import { useLeadVisitInfo, useVisitsDoneToday } from '@/hooks/useVisitBoard'
-import { localDateKey, classifyActiveLead, EMPTY_VISIT_INFO } from '@/lib/visitBoard'
+import { useExecWorkload } from '@/hooks/useExecWorkload'
+import { useVisitsDoneToday } from '@/hooks/useVisitBoard'
+import { localDateKey } from '@/lib/visitBoard'
+import { daySummary } from '@/lib/reminderPlan'
+import type { Lead } from '@/types/sales'
 import { hapticSelect } from '@/lib/haptics'
 import { SkeletonBlock } from '@/components/ui/Skeleton'
 import TimeTrackingCard from '@/components/sales/TimeTrackingCard'
 import RemindersCard from '@/components/sales/RemindersCard'
+import NeedsAttentionCard from '@/components/sales/NeedsAttentionCard'
+import NotificationBell from '@/components/sales/NotificationBell'
+import { buildNotificationFeed } from '@/lib/notificationFeed'
+import LeadDetailModal from '@/components/sales/LeadDetailModal'
 import { brand } from '@/constants/brand'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -52,42 +57,16 @@ function greetingFor(hour: number): string {
 //   overdue    scheduled visits whose date has passed
 // A recorded visit leaves "visit fixed", so counting only scheduled visits
 // made the number fall as the day went on and showed nothing for follow-ups.
-function useTodaySummary(enabled: boolean, userId: string | undefined) {
-  const { data: activeLeads = [], isLoading: leadsLoading } = useLeads(
-    userId ? { stageIn: ['visit_fixed', 'visited'], assignedExecId: userId } : undefined,
-    { enabled: enabled && !!userId },
-  )
-  const leadIds = useMemo(() => activeLeads.map((l) => l.id), [activeLeads])
-  const { data: infoMap, isLoading: infoLoading } = useLeadVisitInfo(leadIds)
-  const { data: followUps = [], isLoading: followUpsLoading } = useMyFollowUps()
+function useTodaySummary(workload: ReturnType<typeof useExecWorkload>, enabled: boolean, userId: string | undefined) {
+  const { activeLeads, infoMap, followUps, loading: workloadLoading } = workload
   const { data: done = 0, isLoading: doneLoading } = useVisitsDoneToday(userId, enabled)
 
   const summary = useMemo(() => {
-    const today = localDateKey()
-    let toVisit = 0
-    let overdue = 0
-    const followUpLeadIds = new Set<string>()
-
-    for (const lead of activeLeads) {
-      const date = lead.visit_date?.slice(0, 10)
-      if (lead.stage === 'visit_fixed' && date) {
-        if (date === today) toVisit++
-        else if (date < today) overdue++
-      }
-      // Visited, not finalized, no next visit booked.
-      if (lead.stage === 'visited' && infoMap && classifyActiveLead(lead, infoMap.get(lead.id) ?? EMPTY_VISIT_INFO) === 'follow_up') {
-        followUpLeadIds.add(lead.id)
-      }
-    }
-    for (const f of followUps) {
-      if (localDateKey(new Date(f.due_at)) <= today) followUpLeadIds.add(f.lead_id)
-    }
-
-    return { done, toVisit, followUps: followUpLeadIds.size, overdue }
+    const { toVisit, overdue, followUps: followUpCount } = daySummary(activeLeads, infoMap, followUps, localDateKey())
+    return { done, toVisit, followUps: followUpCount, overdue }
   }, [activeLeads, infoMap, followUps, done])
 
-  const waitingOnInfo = leadIds.length > 0 && infoLoading
-  return { ...summary, loading: enabled && (leadsLoading || waitingOnInfo || followUpsLoading || doneLoading) }
+  return { ...summary, loading: workloadLoading || (enabled && doneLoading) }
 }
 
 function Stat({ value, label, tone, onPress }: { value: number; label: string; tone?: 'alert'; onPress?: () => void }) {
@@ -110,7 +89,13 @@ export default function HomeScreen() {
   const router = useRouter()
   const role = profile?.role
   const isSalesExec = role === 'sales_exec'
-  const today = useTodaySummary(isSalesExec, user?.id)
+  const workload = useExecWorkload(isSalesExec, user?.id)
+  const today = useTodaySummary(workload, isSalesExec, user?.id)
+  const [detailLead, setDetailLead] = useState<Lead | null>(null)
+  const feed = useMemo(
+    () => (isSalesExec && !workload.loading ? buildNotificationFeed({ leads: workload.activeLeads, infoMap: workload.infoMap, followUps: workload.followUps }) : []),
+    [isSalesExec, workload.loading, workload.activeLeads, workload.infoMap, workload.followUps],
+  )
 
   if (loading) {
     return (
@@ -153,6 +138,7 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{greetingFor(new Date().getHours())}{roleLabel ? ` · ${roleLabel}` : ''}</Text>
             <Text style={styles.name} numberOfLines={1}>{firstName || 'there'}</Text>
           </View>
+          {isSalesExec && <NotificationBell items={feed} onOpenLead={setDetailLead} onOpenTodo={() => router.push('/todo')} />}
           <TouchableOpacity style={styles.signOutBtn} onPress={signOut} accessibilityLabel="Sign out" hitSlop={8}>
             <Ionicons name="log-out-outline" size={22} color={brand.muted} />
           </TouchableOpacity>
@@ -194,6 +180,10 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+          {isSalesExec && !workload.loading && (
+            <NeedsAttentionCard leads={workload.activeLeads} infoMap={workload.infoMap} onOpen={setDetailLead} />
+          )}
+
           {isSalesExec && <TimeTrackingCard />}
           <RemindersCard />
         </View>
@@ -217,6 +207,7 @@ export default function HomeScreen() {
           ))}
         </View>
       </ScrollView>
+      <LeadDetailModal lead={detailLead} onClose={() => setDetailLead(null)} />
     </SafeAreaView>
   )
 }

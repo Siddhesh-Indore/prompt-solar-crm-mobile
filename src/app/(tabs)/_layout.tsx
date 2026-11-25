@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/context/AuthContext'
 import { brand } from '@/constants/brand'
 import { hapticSelect } from '@/lib/haptics'
+import { useReminderSync } from '@/hooks/useReminderSync'
 
 type IconName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -17,6 +18,15 @@ function tabIcon(outline: IconName, filled: IconName) {
   return ({ color, focused }: { color: ColorValue; focused: boolean }) => (
     <Ionicons name={focused ? filled : outline} size={24} color={typeof color === 'string' ? color : brand.navy} />
   )
+}
+
+// Renders nothing — keeps a sales exec's phone reminders up to date while the
+// tabs are showing. Its own component so the hook isn't skipped by the
+// loading / signed-out early returns below.
+function ReminderSync() {
+  const { profile, user } = useAuth()
+  useReminderSync(profile?.role === 'sales_exec', user?.id)
+  return null
 }
 
 export default function TabsLayout() {
@@ -32,6 +42,8 @@ export default function TabsLayout() {
   const canSeeTodo = role === 'sales_exec' || role === 'telecaller' || role === 'admin' || role === 'manager'
 
   return (
+    <>
+    <ReminderSync />
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -57,5 +69,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="visits" options={{ title: 'Visits', href: canSeeVisits ? undefined : null, tabBarIcon: tabIcon('car-outline', 'car') }} />
       <Tabs.Screen name="todo" options={{ title: 'To-Do', href: canSeeTodo ? undefined : null, tabBarIcon: tabIcon('checkbox-outline', 'checkbox') }} />
     </Tabs>
+    </>
   )
 }
